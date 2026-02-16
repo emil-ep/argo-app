@@ -19,7 +19,7 @@ patchesStrategicMerge:
 images:
   - name: ecommerce-backend
     newName: ghcr.io/emil-ep/argo-app/backend
-    newTag: v1.0.2
+    newTag: v1.0.7
   - name: ecommerce-frontend
     newName: ghcr.io/emil-ep/argo-app/frontend
     newTag: v1.0.5
