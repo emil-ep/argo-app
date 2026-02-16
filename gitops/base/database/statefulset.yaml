@@ -17,6 +17,10 @@ spec:
         app: postgres
         component: database
     spec:
+      # Docker Hub authentication to avoid rate limits
+      # Create the secret with: ./scripts/setup-dockerhub-auth.sh
+      imagePullSecrets:
+        - name: dockerhub-secret
       containers:
       - name: postgres
         image: postgres:15-alpine

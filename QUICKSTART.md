@@ -5,9 +5,29 @@ Get your e-commerce application running with automated CI/CD in minutes!
 ## Prerequisites
 
 - GitHub account
+- Docker Hub account (free - to avoid rate limits)
 - Kubernetes cluster (minikube, kind, or cloud provider)
 - kubectl installed and configured
 - ArgoCD installed in your cluster
+
+## Step 0: Setup Docker Hub Authentication (Required)
+
+To avoid Docker Hub rate limits, create the image pull secret:
+
+```bash
+# Run the automated setup script
+./scripts/setup-dockerhub-auth.sh
+
+# Or manually create the secret
+kubectl create secret docker-registry dockerhub-secret \
+  --docker-server=docker.io \
+  --docker-username=YOUR_DOCKERHUB_USERNAME \
+  --docker-password=YOUR_DOCKERHUB_PASSWORD \
+  --docker-email=YOUR_EMAIL \
+  -n ecommerce-dev
+```
+
+**Note:** This is a one-time setup. Once created, the application will automatically use it.
 
 ## Step 1: Fork/Clone Repository
 

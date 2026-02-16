@@ -15,6 +15,7 @@ const CartItem = sequelize.define('CartItem', {
       key: 'id'
     }
   },
+  
   product_id: {
     type: DataTypes.UUID,
     allowNull: false,
