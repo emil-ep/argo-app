@@ -21,6 +21,8 @@ const CartPage = () => {
     }
   };
 
+  
+
   if (cart.items.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, textAlign: 'center' }}>
