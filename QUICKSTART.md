@@ -15,6 +15,10 @@ Get your e-commerce application running with automated CI/CD in minutes!
 # Clone this repository
 git clone https://github.com/YOUR_USERNAME/argo-app.git
 cd argo-app
+
+# Generate package-lock.json files (required for Docker builds)
+cd backend && npm install --package-lock-only && cd ..
+cd frontend && npm install --package-lock-only && cd ..
 ```
 
 ## Step 2: Update Configuration

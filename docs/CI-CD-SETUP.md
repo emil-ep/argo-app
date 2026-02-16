@@ -18,8 +18,13 @@ The CI/CD pipeline automatically:
 ### 1. GitHub Repository Setup
 
 1. **Create a GitHub repository** for your project
-2. **Push your code** to the repository
-3. **Enable GitHub Actions** (enabled by default)
+2. **Generate package-lock.json files** (required for Docker builds):
+   ```bash
+   cd backend && npm install --package-lock-only && cd ..
+   cd frontend && npm install --package-lock-only && cd ..
+   ```
+3. **Push your code** to the repository (including package-lock.json files)
+4. **Enable GitHub Actions** (enabled by default)
 
 ### 2. GitHub Container Registry (GHCR)
 
@@ -242,7 +247,49 @@ kubectl get events -n ecommerce-dev --sort-by='.lastTimestamp'
 3. Expand the failed step
 
 **Common issues:**
-- Docker build errors: Check Dockerfile syntax
+
+#### 1. `npm ci` Failed - Missing package-lock.json
+
+**Error:**
+```
+ERROR: failed to solve: process "/bin/sh -c npm ci" did not complete successfully: exit code: 1
+```
+
+**Solution:**
+Generate package-lock.json files:
+```bash
+cd backend && npm install --package-lock-only && cd ..
+cd frontend && npm install --package-lock-only && cd ..
+git add backend/package-lock.json frontend/package-lock.json
+git commit -m "Add package-lock.json files"
+git push
+```
+
+#### 2. Permission Denied - Unable to Push to Repository
+
+**Error:**
+```
+remote: Permission to USERNAME/argo-app.git denied to github-actions[bot].
+fatal: unable to access 'https://github.com/USERNAME/argo-app/': The requested URL returned error: 403
+```
+
+**Solution:**
+The workflow needs write permissions. This is already fixed in the workflow file with:
+```yaml
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+```
+
+If you still see this error, ensure:
+1. GitHub Actions is enabled in your repository settings
+2. Workflow permissions are set to "Read and write permissions" in Settings → Actions → General → Workflow permissions
+
+#### 3. Docker build errors
+
+**Solution:**
+- Check Dockerfile syntax
 - Test failures: Fix failing tests
 - Permission errors: Check repository settings
 
