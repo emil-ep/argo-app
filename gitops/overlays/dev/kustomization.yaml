@@ -22,7 +22,7 @@ images:
     newTag: v1.0.2
   - name: ecommerce-frontend
     newName: ghcr.io/emil-ep/argo-app/frontend
-    newTag: v1.0.2
+    newTag: v1.0.5
 
 commonLabels:
   environment: dev
