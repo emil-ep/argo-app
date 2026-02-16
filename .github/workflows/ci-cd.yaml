@@ -1,0 +1,217 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: ${{ github.repository }}/backend
+  FRONTEND_IMAGE_NAME: ${{ github.repository }}/frontend
+
+jobs:
+  # Determine version based on commits
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      backend_changed: ${{ steps.changes.outputs.backend }}
+      frontend_changed: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
+      - name: Generate version
+        id: version
+        run: |
+          # Get the short SHA
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          
+          # Get the current date
+          DATE=$(date +%Y%m%d)
+          
+          # Count commits on main/master
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          
+          # Generate semantic version: v1.0.COMMIT_COUNT
+          VERSION="v1.0.${COMMIT_COUNT}"
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated version: ${VERSION}"
+
+  # Build and push backend
+  build-backend:
+    needs: version
+    if: needs.version.outputs.backend_changed == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.version.outputs.version }}
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Build and push frontend
+  build-frontend:
+    needs: version
+    if: needs.version.outputs.frontend_changed == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.version.outputs.version }}
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Update GitOps repository
+  update-gitops:
+    needs: [version, build-backend, build-frontend]
+    if: github.event_name == 'push' && (needs.version.outputs.backend_changed == 'true' || needs.version.outputs.frontend_changed == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update image tags in kustomization
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          
+          # Update backend image tag
+          if [ "${{ needs.version.outputs.backend_changed }}" == "true" ]; then
+            sed -i "s|newTag:.*|newTag: ${VERSION}|g" gitops/overlays/dev/kustomization.yaml
+            echo "Updated backend image to ${VERSION}"
+          fi
+          
+          # Update frontend image tag
+          if [ "${{ needs.version.outputs.frontend_changed }}" == "true" ]; then
+            sed -i "s|newTag:.*|newTag: ${VERSION}|g" gitops/overlays/dev/kustomization.yaml
+            echo "Updated frontend image to ${VERSION}"
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add gitops/overlays/dev/kustomization.yaml
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update image tags to ${{ needs.version.outputs.version }}"
+            git push
+          fi
+
+  # Create GitHub Release
+  create-release:
+    needs: [version, update-gitops]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.version.outputs.version }}
+          release_name: Release ${{ needs.version.outputs.version }}
+          body: |
+            ## Changes in this Release
+            - Backend: ${{ needs.version.outputs.backend_changed == 'true' && '✅ Updated' || '⏭️ No changes' }}
+            - Frontend: ${{ needs.version.outputs.frontend_changed == 'true' && '✅ Updated' || '⏭️ No changes' }}
+            
+            ### Docker Images
+            - Backend: `ghcr.io/${{ github.repository }}/backend:${{ needs.version.outputs.version }}`
+            - Frontend: `ghcr.io/${{ github.repository }}/frontend:${{ needs.version.outputs.version }}`
+            
+            ### Deployment
+            ArgoCD will automatically sync these changes to the cluster.
+          draft: false
+          prerelease: false
+
+# Made with Bob

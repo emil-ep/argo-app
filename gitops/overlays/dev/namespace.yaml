@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecommerce-dev
+  labels:
+    name: ecommerce-dev
+    environment: dev
+
+# Made with Bob
