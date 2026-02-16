@@ -52,11 +52,12 @@ git push origin main
 ```
 
 **🎉 GitHub Actions will automatically:**
-- Build your Docker images
+- Build your Docker images (when backend/ or frontend/ changes)
 - Push to GitHub Container Registry
 - Version with semantic tags (v1.0.1, v1.0.2, etc.)
-- Update GitOps manifests
 - Create a GitHub release
+
+**📝 Note:** Deployment to Kubernetes is manual - you control when to deploy by updating the image tags in `gitops/overlays/dev/kustomization.yaml`. See [Manual Deployment Guide](docs/MANUAL-DEPLOYMENT.md) for details.
 
 ## Step 4: Install ArgoCD (if not already installed)
 

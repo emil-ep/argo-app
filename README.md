@@ -77,27 +77,56 @@ npm run seed
 - Admin: `admin@example.com` / `admin123`
 - User: `user@example.com` / `user123`
 
-## 🤖 Automated CI/CD
+## 🤖 CI/CD Pipeline
 
-This project includes a complete CI/CD pipeline using GitHub Actions!
+This project includes an automated CI/CD pipeline using GitHub Actions for building and publishing container images.
+
+### How It Works
+
+**Automatic (CI):**
+- ✅ Builds Docker images when `backend/` or `frontend/` changes
+- ✅ Pushes images to GitHub Container Registry (GHCR)
+- ✅ Tags with semantic versions (v1.0.X)
+- ✅ Creates GitHub releases
+
+**Manual (CD):**
+- 📝 You manually update `gitops/overlays/dev/kustomization.yaml` with desired version
+- 🔄 ArgoCD automatically syncs changes to Kubernetes
 
 ### Quick Setup
 
-1. **Push code to GitHub**:
+1. **Generate package-lock.json files**:
    ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/argo-app.git
-   git push -u origin main
+   cd backend && npm install --package-lock-only && cd ..
+   cd frontend && npm install --package-lock-only && cd ..
    ```
 
 2. **Update image references** in `gitops/overlays/dev/kustomization.yaml`:
-   - Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username
+   ```yaml
+   images:
+     - name: ecommerce-backend
+       newName: ghcr.io/YOUR_USERNAME/argo-app/backend  # ← Change this
+       newTag: latest
+     - name: ecommerce-frontend
+       newName: ghcr.io/YOUR_USERNAME/argo-app/frontend  # ← Change this
+       newTag: latest
+   ```
 
-3. **Push changes** - GitHub Actions will automatically:
-   - Build Docker images
-   - Push to GitHub Container Registry
-   - Version with semantic tags (v1.0.X)
-   - Update GitOps manifests
-   - Create GitHub releases
+3. **Update repository URL** in `gitops/argocd/application.yaml`:
+   ```yaml
+   spec:
+     source:
+       repoURL: https://github.com/YOUR_USERNAME/argo-app.git  # ← Change this
+   ```
+
+4. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Initial setup"
+   git push origin main
+   ```
+
+5. **Deploy manually** - See [Manual Deployment Guide](docs/MANUAL-DEPLOYMENT.md)
 
 4. **ArgoCD syncs automatically** - Your app deploys within minutes!
 

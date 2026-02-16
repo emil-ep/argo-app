@@ -5,15 +5,21 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
 
 permissions:
-  contents: write
+  contents: read
   packages: write
-  pull-requests: write
 
 env:
   REGISTRY: ghcr.io
@@ -65,7 +71,7 @@ jobs:
   # Build and push backend
   build-backend:
     needs: version
-    if: needs.version.outputs.backend_changed == 'true' || github.event_name == 'push'
+    if: needs.version.outputs.backend_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -107,7 +113,7 @@ jobs:
   # Build and push frontend
   build-frontend:
     needs: version
-    if: needs.version.outputs.frontend_changed == 'true' || github.event_name == 'push'
+    if: needs.version.outputs.frontend_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -146,50 +152,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Update GitOps repository
-  update-gitops:
-    needs: [version, build-backend, build-frontend]
-    if: github.event_name == 'push' && (needs.version.outputs.backend_changed == 'true' || needs.version.outputs.frontend_changed == 'true')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update image tags in kustomization
-        run: |
-          VERSION="${{ needs.version.outputs.version }}"
-          
-          # Update backend image tag
-          if [ "${{ needs.version.outputs.backend_changed }}" == "true" ]; then
-            sed -i "s|newTag:.*|newTag: ${VERSION}|g" gitops/overlays/dev/kustomization.yaml
-            echo "Updated backend image to ${VERSION}"
-          fi
-          
-          # Update frontend image tag
-          if [ "${{ needs.version.outputs.frontend_changed }}" == "true" ]; then
-            sed -i "s|newTag:.*|newTag: ${VERSION}|g" gitops/overlays/dev/kustomization.yaml
-            echo "Updated frontend image to ${VERSION}"
-          fi
-
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          git add gitops/overlays/dev/kustomization.yaml
-          
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore: update image tags to ${{ needs.version.outputs.version }}"
-            git push
-          fi
-
   # Create GitHub Release
   create-release:
-    needs: [version, update-gitops]
+    needs: [version, build-backend, build-frontend]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -211,11 +176,20 @@ jobs:
             - Frontend: ${{ needs.version.outputs.frontend_changed == 'true' && '✅ Updated' || '⏭️ No changes' }}
             
             ### Docker Images
-            - Backend: `ghcr.io/${{ github.repository }}/backend:${{ needs.version.outputs.version }}`
-            - Frontend: `ghcr.io/${{ github.repository }}/frontend:${{ needs.version.outputs.version }}`
+            ${{ needs.version.outputs.backend_changed == 'true' && format('- Backend: `ghcr.io/{0}/backend:{1}`', github.repository, needs.version.outputs.version) || '' }}
+            ${{ needs.version.outputs.frontend_changed == 'true' && format('- Frontend: `ghcr.io/{0}/frontend:{1}`', github.repository, needs.version.outputs.version) || '' }}
             
-            ### Deployment
-            ArgoCD will automatically sync these changes to the cluster.
+            ### Manual Deployment
+            To deploy this version, update `gitops/overlays/dev/kustomization.yaml`:
+            ```yaml
+            images:
+              - name: ecommerce-backend
+                newName: ghcr.io/${{ github.repository }}/backend
+                newTag: ${{ needs.version.outputs.version }}
+              - name: ecommerce-frontend
+                newName: ghcr.io/${{ github.repository }}/frontend
+                newTag: ${{ needs.version.outputs.version }}
+            ```
           draft: false
           prerelease: false
 
