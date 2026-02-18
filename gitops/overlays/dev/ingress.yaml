@@ -15,7 +15,10 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: backend
+            # Use backend-stable for Argo Rollouts traffic management
+            # Argo Rollouts will automatically manage traffic splitting between
+            # backend-stable and backend-canary services
+            name: backend-stable
             port:
               number: 3000
       - path: /
