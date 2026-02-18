@@ -92,6 +92,10 @@ spec:
   # Canary Strategy
   strategy:
     canary:
+      # Service references for traffic routing
+      canaryService: backend-canary
+      stableService: backend-stable
+      
       # Number of pods to run for canary
       canaryReplicas: 1
       
