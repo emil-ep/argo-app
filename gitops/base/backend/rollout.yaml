@@ -127,12 +127,13 @@ spec:
           annotationPrefix: nginx.ingress.kubernetes.io
       
       # Analysis for automated promotion/rollback
-      analysis:
-        templates:
-        - templateName: backend-success-rate
-        startingStep: 1
-        args:
-        - name: service-name
-          value: backend
+      # Disabled until Prometheus is installed
+      # analysis:
+      #   templates:
+      #   - templateName: backend-success-rate
+      #   startingStep: 1
+      #   args:
+      #   - name: service-name
+      #     value: backend
 
 # Made with Bob
