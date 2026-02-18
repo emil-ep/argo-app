@@ -24,7 +24,8 @@ images:
     newName: ghcr.io/emil-ep/argo-app/frontend
     newTag: v1.0.5
 
-commonLabels:
-  environment: dev
+# Note: commonLabels removed to avoid conflicts with Argo Rollouts
+# Argo Rollouts validates that service selectors match rollout selectors
+# commonLabels would add environment: dev to rollout selector, causing mismatch
 
 # Made with Bob
