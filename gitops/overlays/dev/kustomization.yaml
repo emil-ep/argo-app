@@ -13,7 +13,7 @@ resources:
   - namespace.yaml
 
 patchesStrategicMerge:
-  - backend-patch.yaml
+  # backend-patch.yaml removed - using Rollout instead of Deployment
   - frontend-patch.yaml
 
 images:
