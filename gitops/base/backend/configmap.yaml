@@ -6,7 +6,15 @@ metadata:
     app: backend
     component: api
 data:
+  # Database configuration
+  database.host: "postgres"
+  database.port: "5432"
+  database.name: "ecommerce"
+  
+  # CORS configuration
   cors.origin: "http://localhost"
+  
+  # Rate limiting
   rate.limit.window: "900000"
   rate.limit.max: "100"
 
