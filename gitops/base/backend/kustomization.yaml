@@ -1,11 +1,17 @@
+# Kustomization for Argo Rollouts (Canary Deployment)
+# To use this, rename to kustomization.yaml and backup the original
+
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - deployment.yaml
+  # Use rollout instead of deployment
+  - rollout.yaml
   - service.yaml
+  - service-canary.yaml
   - configmap.yaml
   - secret.yaml
+  - analysis-template.yaml
 
 commonLabels:
   app.kubernetes.io/name: backend
