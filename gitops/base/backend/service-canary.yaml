@@ -5,9 +5,6 @@ metadata:
   name: backend-canary
   labels:
     app: backend
-    app.kubernetes.io/name: backend
-    app.kubernetes.io/component: api
-    app.kubernetes.io/part-of: ecommerce
 spec:
   type: ClusterIP
   ports:
@@ -17,11 +14,6 @@ spec:
     name: http
   selector:
     app: backend
-    app.kubernetes.io/name: backend
-    app.kubernetes.io/component: api
-    app.kubernetes.io/part-of: ecommerce
-    # This label is automatically added by Argo Rollouts to canary pods
-    rollouts-pod-template-hash: canary
 
 ---
 # Stable Service - Routes traffic to stable pods
@@ -31,9 +23,6 @@ metadata:
   name: backend-stable
   labels:
     app: backend
-    app.kubernetes.io/name: backend
-    app.kubernetes.io/component: api
-    app.kubernetes.io/part-of: ecommerce
 spec:
   type: ClusterIP
   ports:
@@ -43,10 +32,5 @@ spec:
     name: http
   selector:
     app: backend
-    app.kubernetes.io/name: backend
-    app.kubernetes.io/component: api
-    app.kubernetes.io/part-of: ecommerce
-    # This label is automatically added by Argo Rollouts to stable pods
-    rollouts-pod-template-hash: stable
 
 # Made with Bob
