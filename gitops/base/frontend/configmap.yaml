@@ -6,6 +6,9 @@ metadata:
     app: frontend
     component: ui
 data:
-  api.url: "http://backend:3000"
+  # Use empty string for relative URLs since frontend and backend
+  # are behind the same ingress (ecommerce-dev.local:30112)
+  # Frontend at / and backend at /api
+  api.url: ""
 
 # Made with Bob
