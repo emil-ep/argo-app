@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: ecommerce-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Remove rewrite-target to preserve the /api prefix
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
