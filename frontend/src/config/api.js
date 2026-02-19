@@ -1,6 +1,11 @@
 // Get API URL from runtime environment or build-time environment variable
-export const API_BASE_URL = window.ENV?.API_URL || 
-  import.meta.env.VITE_API_URL || 
+// Empty string means use relative URLs (same origin as frontend)
+const runtimeApiUrl = window.ENV?.API_URL;
+const buildTimeApiUrl = import.meta.env.VITE_API_URL;
+
+export const API_BASE_URL =
+  runtimeApiUrl !== undefined ? runtimeApiUrl :
+  buildTimeApiUrl !== undefined ? buildTimeApiUrl :
   'http://localhost:3000';
 
 export const API_ENDPOINTS = {
