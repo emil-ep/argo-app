@@ -1,3 +1,5 @@
+// Instana MUST be required first for proper instrumentation
+require('./instana');
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');

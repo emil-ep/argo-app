@@ -17,5 +17,11 @@ data:
   # Rate limiting
   rate.limit.window: "900000"
   rate.limit.max: "100"
+  
+  # Instana configuration
+  instana.enabled: "true"
+  instana.agent.host: "ingress-red-saas.instana.io"
+  instana.agent.port: "443"
+  instana.service.name: "ecommerce-backend"
 
 # Made with Bob

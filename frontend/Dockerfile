@@ -24,8 +24,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built application
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create env.js template
-RUN echo 'window.ENV = { API_URL: "${API_URL}" };' > /usr/share/nginx/html/env.js.template
+# Create env.js template with Instana EUM variables
+RUN echo 'window.ENV = { API_URL: "${API_URL}", INSTANA_EUM_KEY: "${INSTANA_EUM_KEY}", INSTANA_EUM_URL: "${INSTANA_EUM_URL}" };' > /usr/share/nginx/html/env.js.template
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh

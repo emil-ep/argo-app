@@ -28,6 +28,16 @@ spec:
             configMapKeyRef:
               name: frontend-config
               key: api.url
+        - name: INSTANA_EUM_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: instana.eum.key
+        - name: INSTANA_EUM_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: instana.eum.url
         resources:
           requests:
             memory: "128Mi"
