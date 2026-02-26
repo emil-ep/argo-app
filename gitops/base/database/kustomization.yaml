@@ -6,6 +6,7 @@ resources:
   - service.yaml
   - configmap.yaml
   - secret.yaml
+  - seed-job.yaml
 
 commonLabels:
   app.kubernetes.io/name: postgres
