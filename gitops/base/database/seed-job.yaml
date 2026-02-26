@@ -22,27 +22,27 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
-        - name: DB_HOST
+        - name: DATABASE_HOST
           valueFrom:
             configMapKeyRef:
               name: backend-config
               key: database.host
-        - name: DB_PORT
+        - name: DATABASE_PORT
           valueFrom:
             configMapKeyRef:
               name: backend-config
               key: database.port
-        - name: DB_NAME
+        - name: DATABASE_NAME
           valueFrom:
             configMapKeyRef:
               name: backend-config
               key: database.name
-        - name: DB_USER
+        - name: DATABASE_USER
           valueFrom:
             secretKeyRef:
               name: backend-secret
               key: database.user
-        - name: DB_PASSWORD
+        - name: DATABASE_PASSWORD
           valueFrom:
             secretKeyRef:
               name: backend-secret
