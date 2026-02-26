@@ -67,6 +67,31 @@ spec:
             secretKeyRef:
               name: backend-secret
               key: jwt.secret
+        - name: INSTANA_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: instana.enabled
+        - name: INSTANA_AGENT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: instana.agent.host
+        - name: INSTANA_AGENT_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: instana.agent.port
+        - name: INSTANA_AGENT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: instana.agent.key
+        - name: INSTANA_SERVICE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: instana.service.name
         resources:
           requests:
             memory: "256Mi"
