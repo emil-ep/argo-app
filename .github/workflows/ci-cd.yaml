@@ -53,20 +53,19 @@ jobs:
       - name: Generate version
         id: version
         run: |
-          # Get the short SHA
-          SHORT_SHA=$(git rev-parse --short HEAD)
+          # Read version from backend package.json (use as primary version)
+          BACKEND_VERSION=$(jq -r '.version' backend/package.json)
+          FRONTEND_VERSION=$(jq -r '.version' frontend/package.json)
           
-          # Get the current date
-          DATE=$(date +%Y%m%d)
-          
-          # Count commits on main/master
-          COMMIT_COUNT=$(git rev-list --count HEAD)
-          
-          # Generate semantic version: v1.0.COMMIT_COUNT
-          VERSION="v1.0.${COMMIT_COUNT}"
+          # Use backend version as the primary version
+          VERSION="v${BACKEND_VERSION}"
           
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "backend_version=v${BACKEND_VERSION}" >> $GITHUB_OUTPUT
+          echo "frontend_version=v${FRONTEND_VERSION}" >> $GITHUB_OUTPUT
           echo "Generated version: ${VERSION}"
+          echo "Backend version: v${BACKEND_VERSION}"
+          echo "Frontend version: v${FRONTEND_VERSION}"
 
   # Build and push backend
   build-backend:

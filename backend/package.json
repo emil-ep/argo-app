@@ -1,6 +1,6 @@
 {
   "name": "ecommerce-backend",
-  "version": "1.0.0",
+  "version": "1.0.10",
   "description": "E-commerce backend API with Express and PostgreSQL",
   "main": "src/server.js",
   "scripts": {
