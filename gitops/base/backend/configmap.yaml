@@ -20,8 +20,8 @@ data:
   
   # Instana configuration
   instana.enabled: "true"
-  instana.agent.host: "ingress-red-saas.instana.io"
-  instana.agent.port: "443"
+  instana.agent.host: "instana-agent.instana-agent.svc.cluster.local"
+  instana.agent.port: "42699"
   instana.service.name: "ecommerce-backend"
 
 # Made with Bob
