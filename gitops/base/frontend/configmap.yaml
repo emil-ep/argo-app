@@ -9,10 +9,10 @@ data:
   # Full URL to access backend through Ingress
   # Frontend and backend are behind the same ingress (ecommerce-dev.local:30112)
   # Frontend at / and backend at /api
-  api.url: "http://ecommerce-dev.local:30112"
+  api.url: "http://ecommerce-dev.local:30839"
   
   # Instana End User Monitoring (EUM) configuration
-  instana.eum.key: "Vjd1MHFkNW5SV0tQUWVBR1p4M1J4QQ=="
+  instana.eum.key: "bnF0YlY1Y0VRNWV2ME1Gek9Jd3NrZw=="
   instana.eum.url: "https://eum.instana.io"
 
 # Made with Bob
