@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/emil-ep/argo-app.git
-    targetRevision: main
+    targetRevision: master
     path: gitops/overlays/dev
   destination:
     server: https://kubernetes.default.svc
