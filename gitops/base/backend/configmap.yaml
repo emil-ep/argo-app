@@ -11,8 +11,8 @@ data:
   database.port: "5432"
   database.name: "ecommerce"
   
-  # CORS configuration
-  cors.origin: "http://localhost"
+  # CORS configuration - Allow all origins (use specific domains in production)
+  cors.origin: "*"
   
   # Rate limiting
   rate.limit.window: "900000"

@@ -21,10 +21,15 @@ const app = express();
 app.use(helmet());
 
 // CORS configuration
-app.use(cors({
-  origin: config.corsOrigin,
-  credentials: true
-}));
+const corsOptions = {
+  origin: config.corsOrigin === '*'
+    ? true  // Allow all origins when set to '*'
+    : config.corsOrigin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({

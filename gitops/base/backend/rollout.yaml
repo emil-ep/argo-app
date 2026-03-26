@@ -67,6 +67,11 @@ spec:
             secretKeyRef:
               name: backend-secret
               key: jwt.secret
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: cors.origin
         - name: INSTANA_ENABLED
           valueFrom:
             configMapKeyRef:
