@@ -41,7 +41,32 @@ cd backend && npm install --package-lock-only && cd ..
 cd frontend && npm install --package-lock-only && cd ..
 ```
 
-## Step 2: Update Configuration
+## Step 2: Configure Secrets (Required for Instana)
+
+**IMPORTANT**: Configure your Instana keys before deployment:
+
+```bash
+# Navigate to the dev overlay directory
+cd gitops/overlays/dev
+
+# Copy backend secrets template
+cp secrets.env.example secrets.env
+
+# Copy frontend secrets template
+cp frontend-secrets.env.example frontend-secrets.env
+
+# Edit secrets.env and add your credentials:
+# - database.password: Your database password
+# - jwt.secret: A strong random string for JWT tokens
+# - instana.agent.key: Your Instana agent key (from Instana Settings → Agent Keys)
+
+# Edit frontend-secrets.env and add:
+# - instana.eum.key: Your Instana EUM key (from Instana Settings → Websites & Mobile Apps)
+```
+
+**Note**: These files are gitignored and will never be committed. See [Instana Setup Guide](docs/INSTANA-SETUP.md) for detailed instructions.
+
+## Step 3: Update Repository Configuration
 
 Edit `gitops/overlays/dev/kustomization.yaml`:
 

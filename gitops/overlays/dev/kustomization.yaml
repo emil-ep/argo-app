@@ -16,6 +16,21 @@ patchesStrategicMerge:
   # backend-patch.yaml removed - using Rollout instead of Deployment
   - frontend-patch.yaml
 
+# Secret generators - secrets are loaded from .env files
+# Copy secrets.env.example to secrets.env and fill in your values
+secretGenerator:
+  - name: backend-secret
+    envs:
+      - secrets.env
+    options:
+      disableNameSuffixHash: true
+  - name: frontend-config
+    envs:
+      - frontend-secrets.env
+    options:
+      disableNameSuffixHash: true
+    behavior: merge
+
 images:
   - name: ecommerce-backend
     newName: ghcr.io/emil-ep/argo-app/backend

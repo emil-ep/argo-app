@@ -1,0 +1,26 @@
+# Secret files - DO NOT commit these
+gitops/overlays/*/secrets.env
+gitops/overlays/*/frontend-secrets.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Made with Bob
