@@ -79,13 +79,13 @@ spec:
               key: instana.enabled
         - name: INSTANA_AGENT_HOST
           valueFrom:
-            configMapKeyRef:
-              name: backend-config
+            secretKeyRef:
+              name: backend-secret
               key: instana.agent.host
         - name: INSTANA_AGENT_PORT
           valueFrom:
-            configMapKeyRef:
-              name: backend-config
+            secretKeyRef:
+              name: backend-secret
               key: instana.agent.port
         - name: INSTANA_AGENT_KEY
           valueFrom:

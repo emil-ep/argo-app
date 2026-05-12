@@ -61,13 +61,29 @@ if [ -z "$JWT_SECRET" ]; then
     echo -e "${YELLOW}Generated JWT secret${NC}"
 fi
 
-# Instana agent key
+# Instana configuration
 echo ""
-echo -e "${YELLOW}Get your Instana Agent Key from:${NC}"
-echo "  Instana UI → Settings → Agent Keys"
+echo -e "${YELLOW}Instana Configuration${NC}"
+echo "---------------------"
 echo ""
-read -p "Enter Instana Agent Key: " INSTANA_AGENT_KEY
+echo "Get your Instana credentials from:"
+echo "  • Agent Key: Instana UI → Settings → Agent Keys"
+echo "  • Endpoint: Your Instana tenant URL (e.g., ingress-red-saas.instana.io)"
+echo ""
 
+read -p "Enter Instana Agent Endpoint Host (default: ingress-red-saas.instana.io): " INSTANA_AGENT_HOST
+if [ -z "$INSTANA_AGENT_HOST" ]; then
+    INSTANA_AGENT_HOST="ingress-red-saas.instana.io"
+    echo -e "${YELLOW}Using default: $INSTANA_AGENT_HOST${NC}"
+fi
+
+read -p "Enter Instana Agent Port (default: 443): " INSTANA_AGENT_PORT
+if [ -z "$INSTANA_AGENT_PORT" ]; then
+    INSTANA_AGENT_PORT="443"
+    echo -e "${YELLOW}Using default: $INSTANA_AGENT_PORT${NC}"
+fi
+
+read -p "Enter Instana Agent Key: " INSTANA_AGENT_KEY
 if [ -z "$INSTANA_AGENT_KEY" ]; then
     echo -e "${RED}Error: Instana Agent Key is required!${NC}"
     exit 1
@@ -85,7 +101,9 @@ database.password=$DB_PASSWORD
 # JWT secret for authentication
 jwt.secret=$JWT_SECRET
 
-# Instana agent key for backend APM tracing
+# Instana configuration for backend APM tracing
+instana.agent.host=$INSTANA_AGENT_HOST
+instana.agent.port=$INSTANA_AGENT_PORT
 instana.agent.key=$INSTANA_AGENT_KEY
 EOF
 

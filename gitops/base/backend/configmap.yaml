@@ -20,8 +20,7 @@ data:
   
   # Instana configuration
   instana.enabled: "true"
-  instana.agent.host: "instana-agent.instana-agent.svc.cluster.local"
-  instana.agent.port: "42699"
+  # instana.agent.host and instana.agent.port are now configured via secrets
   instana.service.name: "ecommerce-backend"
 
 # Made with Bob
