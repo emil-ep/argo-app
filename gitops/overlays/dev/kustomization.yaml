@@ -24,6 +24,9 @@ secretGenerator:
       - secrets.env
     options:
       disableNameSuffixHash: true
+
+# ConfigMap generators - for frontend configuration
+configMapGenerator:
   - name: frontend-config
     envs:
       - frontend-secrets.env
