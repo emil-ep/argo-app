@@ -16,23 +16,11 @@ patchesStrategicMerge:
   # backend-patch.yaml removed - using Rollout instead of Deployment
   - frontend-patch.yaml
 
-# Secret generators - secrets are loaded from .env files
-# Copy secrets.env.example to secrets.env and fill in your values
-secretGenerator:
-  - name: backend-secret
-    envs:
-      - secrets.env
-    options:
-      disableNameSuffixHash: true
-
-# ConfigMap generators - for frontend configuration
-configMapGenerator:
-  - name: frontend-config
-    envs:
-      - frontend-secrets.env
-    options:
-      disableNameSuffixHash: true
-    behavior: merge
+# Note: Secret and ConfigMap generators removed
+# Secrets and ConfigMaps are now managed directly in Kubernetes
+# Use kubectl to create/update them:
+#   kubectl create secret generic backend-secret --from-env-file=secrets.env -n ecommerce-dev
+#   kubectl create configmap frontend-config --from-env-file=frontend-secrets.env -n ecommerce-dev
 
 images:
   - name: ecommerce-backend
