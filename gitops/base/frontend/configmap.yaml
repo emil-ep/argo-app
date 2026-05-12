@@ -12,7 +12,7 @@ data:
   api.url: "http://ecommerce-dev.local:30839"
   
   # Instana End User Monitoring (EUM) configuration
-  instana.eum.key: "bnF0YlY1Y0VRNWV2ME1Gek9Jd3NrZw=="
+  # instana.eum.key is now set via secretGenerator in overlays
   instana.eum.url: "https://eum.instana.io"
 
 # Made with Bob
