@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Setup Secrets Script
-# This script helps you configure Instana keys and other secrets for the application
+# This script helps you configure Instana keys, Docker Hub auth, and other secrets for the application
 
 set -e
 
@@ -15,6 +15,12 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  E-Commerce Application Secrets Setup${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
+
+# Check if kubectl is installed
+if ! command -v kubectl &> /dev/null; then
+    echo -e "${RED}Error: kubectl is not installed${NC}"
+    exit 1
+fi
 
 # Navigate to the overlay directory
 OVERLAY_DIR="gitops/overlays/dev"
@@ -137,6 +143,54 @@ echo -e "${GREEN}✓ Frontend secrets file created${NC}"
 echo ""
 
 # Summary
+# Docker Hub Authentication
+echo ""
+echo -e "${GREEN}Step 3: Docker Hub Authentication${NC}"
+echo "---------------------------------------"
+echo ""
+echo -e "${YELLOW}To avoid Docker Hub rate limits, configure authentication:${NC}"
+echo ""
+read -p "Do you want to configure Docker Hub authentication? (Y/n): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    echo ""
+    echo "Enter your Docker Hub credentials:"
+    echo "(Create a free account at https://hub.docker.com/signup if needed)"
+    echo ""
+    
+    read -p "Docker Hub Username: " DOCKERHUB_USERNAME
+    read -sp "Docker Hub Password/Token: " DOCKERHUB_PASSWORD
+    echo ""
+    read -p "Email: " DOCKERHUB_EMAIL
+    
+    if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_PASSWORD" ] || [ -z "$DOCKERHUB_EMAIL" ]; then
+        echo -e "${YELLOW}Warning: Docker Hub credentials incomplete. Skipping...${NC}"
+    else
+        echo ""
+        echo -e "${YELLOW}Creating namespace if it doesn't exist...${NC}"
+        kubectl create namespace ecommerce-dev --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null || true
+        
+        echo -e "${YELLOW}Creating docker-registry secret...${NC}"
+        kubectl create secret docker-registry dockerhub-secret \
+          --docker-server=docker.io \
+          --docker-username=$DOCKERHUB_USERNAME \
+          --docker-password=$DOCKERHUB_PASSWORD \
+          --docker-email=$DOCKERHUB_EMAIL \
+          -n ecommerce-dev \
+          --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null
+        
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ Docker Hub authentication configured${NC}"
+        else
+            echo -e "${YELLOW}Warning: Could not create Docker Hub secret${NC}"
+        fi
+    fi
+else
+    echo -e "${YELLOW}Skipping Docker Hub authentication${NC}"
+    echo "You can configure it later by running: ./scripts/setup-dockerhub-auth.sh"
+fi
+
+echo ""
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  Setup Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
