@@ -150,9 +150,8 @@ echo "---------------------------------------"
 echo ""
 echo -e "${YELLOW}To avoid Docker Hub rate limits, configure authentication:${NC}"
 echo ""
-read -p "Do you want to configure Docker Hub authentication? (Y/n): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+read -p "Do you want to configure Docker Hub authentication? (Y/n): " DOCKER_AUTH_REPLY
+if [[ ! $DOCKER_AUTH_REPLY =~ ^[Nn]$ ]]; then
     echo ""
     echo "Enter your Docker Hub credentials:"
     echo "(Create a free account at https://hub.docker.com/signup if needed)"
