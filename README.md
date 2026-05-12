@@ -26,13 +26,30 @@ argo-app/
 
 ## 🚀 Quick Start
 
+### One-Command Installation
+
+```bash
+./install.sh
+```
+
+That's it! The script will guide you through the setup and deploy everything automatically.
+
+See **[INSTALL.md](INSTALL.md)** for detailed installation instructions.
+
 ### Prerequisites
 
-- Docker & Docker Compose
 - Kubernetes cluster (minikube, kind, or cloud provider)
 - kubectl configured
-- ArgoCD installed in cluster
-- Container registry access
+- ArgoCD (optional, for GitOps deployment)
+- Instana credentials (Agent Key and EUM Key)
+
+### Uninstallation
+
+```bash
+./uninstall.sh
+```
+
+Removes all application resources with a single command.
 
 ### Local Development
 
