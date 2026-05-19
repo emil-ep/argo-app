@@ -189,8 +189,12 @@ echo -e "${BLUE}  Installation Complete! 🎉${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
+# Wait a moment for services to get NodePort assigned
+echo "Retrieving service information..."
+sleep 3
+
 # Get NodePort info
-FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30080")
+FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
 BACKEND_NODEPORT=$(kubectl get svc backend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
 
 # Get node IP
@@ -203,7 +207,11 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║                                                        ║${NC}"
 echo -e "${GREEN}║  🌐  Access the E-Commerce Application UI:            ║${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"
-echo -e "${GREEN}║      ${YELLOW}http://${NODE_IP}:${FRONTEND_NODEPORT}${GREEN}                    ║${NC}"
+if [ "$FRONTEND_NODEPORT" != "N/A" ]; then
+    printf "${GREEN}║      ${YELLOW}%-46s${GREEN}║${NC}\n" "http://${NODE_IP}:${FRONTEND_NODEPORT}"
+else
+    echo -e "${GREEN}║      ${RED}Waiting for NodePort assignment...${GREEN}         ║${NC}"
+fi
 echo -e "${GREEN}║                                                        ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
@@ -215,8 +223,16 @@ echo "    Frontend: http://${INGRESS_HOST}/"
 echo "    Backend:  http://${INGRESS_HOST}/api"
 echo ""
 echo "  Direct NodePort Access:"
-echo "    Frontend: http://${NODE_IP}:${FRONTEND_NODEPORT}"
-echo "    Backend:  http://${NODE_IP}:${BACKEND_NODEPORT}"
+if [ "$FRONTEND_NODEPORT" != "N/A" ]; then
+    echo "    Frontend: http://${NODE_IP}:${FRONTEND_NODEPORT}"
+else
+    echo "    Frontend: (NodePort being assigned...)"
+fi
+if [ "$BACKEND_NODEPORT" != "N/A" ]; then
+    echo "    Backend:  http://${NODE_IP}:${BACKEND_NODEPORT}"
+else
+    echo "    Backend:  (NodePort being assigned...)"
+fi
 echo ""
 
 if [ "$DEPLOY_METHOD" = "1" ]; then
@@ -226,6 +242,7 @@ if [ "$DEPLOY_METHOD" = "1" ]; then
 fi
 
 echo -e "${GREEN}Useful Commands:${NC}"
+echo "  View info:        ./show-info.sh"
 echo "  View pods:        kubectl get pods -n ecommerce-dev"
 echo "  View logs:        kubectl logs -f <pod-name> -n ecommerce-dev"
 echo "  Uninstall:        ./uninstall.sh"
@@ -236,3 +253,5 @@ echo "  echo \"${NODE_IP} ${INGRESS_HOST}\" | sudo tee -a /etc/hosts"
 echo ""
 
 echo -e "${GREEN}Installation completed successfully!${NC}"
+echo ""
+echo -e "${CYAN}💡 Tip: Run ${YELLOW}./show-info.sh${CYAN} anytime to view access URLs and installation details${NC}"

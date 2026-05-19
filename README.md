@@ -36,6 +36,21 @@ That's it! The script will guide you through the setup and deploy everything aut
 
 See **[INSTALL.md](INSTALL.md)** for detailed installation instructions.
 
+### View Installation Details
+
+After installation, view access URLs and application status:
+
+```bash
+./show-info.sh
+```
+
+This displays:
+- Frontend UI access URL (NodePort)
+- Backend API access URL
+- Pod status
+- Service information
+- Useful commands
+
 ### Prerequisites
 
 - Kubernetes cluster (minikube, kind, or cloud provider)
