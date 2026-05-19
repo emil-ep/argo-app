@@ -155,6 +155,16 @@ fi
 
 echo ""
 
+# Update ConfigMap with actual values from frontend-secrets.env
+echo "Updating frontend-config with actual values..."
+kubectl create configmap frontend-config \
+  --from-env-file=gitops/overlays/dev/frontend-secrets.env \
+  -n ecommerce-dev \
+  --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null
+
+echo -e "${GREEN}✓ ConfigMap updated${NC}"
+echo ""
+
 # Step 4: Wait for pods to be ready
 echo -e "${GREEN}Step 4: Waiting for Pods to be Ready${NC}"
 echo "-------------------------------------"
@@ -179,23 +189,32 @@ echo -e "${BLUE}  Installation Complete! 🎉${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# Get ingress info
-INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "ecommerce-dev.local")
-
 # Get NodePort info
-FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
+FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30080")
 BACKEND_NODEPORT=$(kubectl get svc backend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
 
 # Get node IP
 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || echo "localhost")
 
-echo -e "${GREEN}Access URLs:${NC}"
+# Get ingress info
+INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "ecommerce-dev.local")
+
+echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║                                                        ║${NC}"
+echo -e "${GREEN}║  🌐  Access the E-Commerce Application UI:            ║${NC}"
+echo -e "${GREEN}║                                                        ║${NC}"
+echo -e "${GREEN}║      ${YELLOW}http://${NODE_IP}:${FRONTEND_NODEPORT}${GREEN}                    ║${NC}"
+echo -e "${GREEN}║                                                        ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+echo -e "${GREEN}Additional Access Methods:${NC}"
 echo ""
 echo "  Via Ingress (if configured):"
 echo "    Frontend: http://${INGRESS_HOST}/"
 echo "    Backend:  http://${INGRESS_HOST}/api"
 echo ""
-echo "  Via NodePort:"
+echo "  Direct NodePort Access:"
 echo "    Frontend: http://${NODE_IP}:${FRONTEND_NODEPORT}"
 echo "    Backend:  http://${NODE_IP}:${BACKEND_NODEPORT}"
 echo ""
