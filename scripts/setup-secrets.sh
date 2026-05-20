@@ -83,9 +83,9 @@ if [ -z "$INSTANA_AGENT_HOST" ]; then
     echo -e "${YELLOW}Using default: $INSTANA_AGENT_HOST${NC}"
 fi
 
-read -p "Enter Instana Agent Port (default: 443): " INSTANA_AGENT_PORT
+read -p "Enter Instana Agent Port (default: 42699): " INSTANA_AGENT_PORT
 if [ -z "$INSTANA_AGENT_PORT" ]; then
-    INSTANA_AGENT_PORT="443"
+    INSTANA_AGENT_PORT="42699"
     echo -e "${YELLOW}Using default: $INSTANA_AGENT_PORT${NC}"
 fi
 

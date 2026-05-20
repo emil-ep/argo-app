@@ -3,7 +3,7 @@
 
 // Build the reporting URL for Instana SaaS
 const agentHost = process.env.INSTANA_AGENT_HOST || 'ingress-red-saas.instana.io';
-const agentPort = process.env.INSTANA_AGENT_PORT || '443';
+const agentPort = process.env.INSTANA_AGENT_PORT || '42699';
 const reportingUrl = `https://${agentHost}:${agentPort}`;
 
 require('@instana/collector')({
