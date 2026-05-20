@@ -5,10 +5,13 @@
 const instanaEnabled = process.env.INSTANA_ENABLED !== 'false';
 
 if (instanaEnabled) {
-  const agentHost = process.env.INSTANA_AGENT_HOST || 'ingress-red-saas.instana.io';
+  let agentHost = process.env.INSTANA_AGENT_HOST || 'ingress-red-saas.instana.io';
   const agentPort = parseInt(process.env.INSTANA_AGENT_PORT || '443', 10);
   const agentKey = process.env.INSTANA_AGENT_KEY;
   const serviceName = process.env.INSTANA_SERVICE_NAME || 'ecommerce-backend';
+
+  // Strip protocol if provided (common mistake)
+  agentHost = agentHost.replace(/^https?:\/\//, '');
 
   // Validate required configuration
   if (!agentKey || agentKey === 'CHANGE_ME_INSTANA_AGENT_KEY') {
@@ -17,8 +20,11 @@ if (instanaEnabled) {
   } else {
     console.log('✓ Initializing Instana tracing...');
     console.log(`  Service: ${serviceName}`);
-    console.log(`  Agent: ${agentHost}:${agentPort}`);
+    console.log(`  Agent: https://${agentHost}:${agentPort}`);
     console.log(`  Key: ${agentKey.substring(0, 8)}...`);
+
+    // For Instana SaaS, use the reportingUrl format
+    const reportingUrl = `https://${agentHost}:${agentPort}`;
 
     require('@instana/collector')({
       tracing: {
@@ -26,11 +32,7 @@ if (instanaEnabled) {
         automaticTracingEnabled: true,
         stackTraceLength: 10,
       },
-      reporting: {
-        host: agentHost,
-        port: agentPort,
-        protocol: 'https',
-      },
+      reportingUrl: reportingUrl,
       agentKey: agentKey,
       serviceName: serviceName,
       tags: {
