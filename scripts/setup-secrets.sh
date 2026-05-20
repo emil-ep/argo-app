@@ -92,6 +92,14 @@ fi
 read -p "Enter Instana Agent Key: " INSTANA_AGENT_KEY
 if [ -z "$INSTANA_AGENT_KEY" ]; then
     echo -e "${RED}Error: Instana Agent Key is required!${NC}"
+    echo "Get your key from: Instana UI → Settings → Agent Keys"
+    exit 1
+fi
+
+# Validate it's not a placeholder
+if [[ "$INSTANA_AGENT_KEY" == "CHANGE_ME"* ]]; then
+    echo -e "${RED}Error: Please provide your actual Instana Agent Key, not a placeholder!${NC}"
+    echo "Get your key from: Instana UI → Settings → Agent Keys"
     exit 1
 fi
 
@@ -127,6 +135,14 @@ read -p "Enter Instana EUM Key: " INSTANA_EUM_KEY
 
 if [ -z "$INSTANA_EUM_KEY" ]; then
     echo -e "${RED}Error: Instana EUM Key is required!${NC}"
+    echo "Get your key from: Instana UI → Settings → Websites & Mobile Apps"
+    exit 1
+fi
+
+# Validate it's not a placeholder
+if [[ "$INSTANA_EUM_KEY" == "CHANGE_ME"* ]]; then
+    echo -e "${RED}Error: Please provide your actual Instana EUM Key, not a placeholder!${NC}"
+    echo "Get your key from: Instana UI → Settings → Websites & Mobile Apps"
     exit 1
 fi
 
