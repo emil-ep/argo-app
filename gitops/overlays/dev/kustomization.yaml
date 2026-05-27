@@ -25,13 +25,11 @@ patchesStrategicMerge:
 images:
   - name: ecommerce-backend
     newName: ghcr.io/emil-ep/argo-app/backend
-    newTag: v1.0.16
+    newTag: v1.0.17
   - name: ecommerce-frontend
     newName: ghcr.io/emil-ep/argo-app/frontend
-    newTag: v1.0.16
+    newTag: v1.0.17
 
 # Note: commonLabels removed to avoid conflicts with Argo Rollouts
 # Argo Rollouts validates that service selectors match rollout selectors
 # commonLabels would add environment: dev to rollout selector, causing mismatch
-
-# Made with Bob
