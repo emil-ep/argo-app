@@ -16,31 +16,19 @@ patchesStrategicMerge:
   # backend-patch.yaml removed - using Rollout instead of Deployment
   - frontend-patch.yaml
 
-# Secret generators - secrets are loaded from .env files
-# Copy secrets.env.example to secrets.env and fill in your values
-secretGenerator:
-  - name: backend-secret
-    envs:
-      - secrets.env
-    options:
-      disableNameSuffixHash: true
-
-# ConfigMap generators - for frontend configuration
-configMapGenerator:
-  - name: frontend-config
-    envs:
-      - frontend-secrets.env
-    options:
-      disableNameSuffixHash: true
-    behavior: merge
+# Note: Secret and ConfigMap generators removed
+# Secrets and ConfigMaps are now managed directly in Kubernetes
+# Use kubectl to create/update them:
+#   kubectl create secret generic backend-secret --from-env-file=secrets.env -n ecommerce-dev
+#   kubectl create configmap frontend-config --from-env-file=frontend-secrets.env -n ecommerce-dev
 
 images:
   - name: ecommerce-backend
     newName: ghcr.io/emil-ep/argo-app/backend
-    newTag: v1.0.13
+    newTag: v1.0.16
   - name: ecommerce-frontend
     newName: ghcr.io/emil-ep/argo-app/frontend
-    newTag: v1.0.13
+    newTag: v1.0.16
 
 # Note: commonLabels removed to avoid conflicts with Argo Rollouts
 # Argo Rollouts validates that service selectors match rollout selectors

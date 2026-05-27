@@ -83,15 +83,23 @@ if [ -z "$INSTANA_AGENT_HOST" ]; then
     echo -e "${YELLOW}Using default: $INSTANA_AGENT_HOST${NC}"
 fi
 
-read -p "Enter Instana Agent Port (default: 443): " INSTANA_AGENT_PORT
+read -p "Enter Instana Agent Port (default: 42699): " INSTANA_AGENT_PORT
 if [ -z "$INSTANA_AGENT_PORT" ]; then
-    INSTANA_AGENT_PORT="443"
+    INSTANA_AGENT_PORT="42699"
     echo -e "${YELLOW}Using default: $INSTANA_AGENT_PORT${NC}"
 fi
 
 read -p "Enter Instana Agent Key: " INSTANA_AGENT_KEY
 if [ -z "$INSTANA_AGENT_KEY" ]; then
     echo -e "${RED}Error: Instana Agent Key is required!${NC}"
+    echo "Get your key from: Instana UI → Settings → Agent Keys"
+    exit 1
+fi
+
+# Validate it's not a placeholder
+if [[ "$INSTANA_AGENT_KEY" == "CHANGE_ME"* ]]; then
+    echo -e "${RED}Error: Please provide your actual Instana Agent Key, not a placeholder!${NC}"
+    echo "Get your key from: Instana UI → Settings → Agent Keys"
     exit 1
 fi
 
@@ -127,6 +135,14 @@ read -p "Enter Instana EUM Key: " INSTANA_EUM_KEY
 
 if [ -z "$INSTANA_EUM_KEY" ]; then
     echo -e "${RED}Error: Instana EUM Key is required!${NC}"
+    echo "Get your key from: Instana UI → Settings → Websites & Mobile Apps"
+    exit 1
+fi
+
+# Validate it's not a placeholder
+if [[ "$INSTANA_EUM_KEY" == "CHANGE_ME"* ]]; then
+    echo -e "${RED}Error: Please provide your actual Instana EUM Key, not a placeholder!${NC}"
+    echo "Get your key from: Instana UI → Settings → Websites & Mobile Apps"
     exit 1
 fi
 
@@ -150,9 +166,8 @@ echo "---------------------------------------"
 echo ""
 echo -e "${YELLOW}To avoid Docker Hub rate limits, configure authentication:${NC}"
 echo ""
-read -p "Do you want to configure Docker Hub authentication? (Y/n): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+read -p "Do you want to configure Docker Hub authentication? (Y/n): " DOCKER_AUTH_REPLY
+if [[ ! $DOCKER_AUTH_REPLY =~ ^[Nn]$ ]]; then
     echo ""
     echo "Enter your Docker Hub credentials:"
     echo "(Create a free account at https://hub.docker.com/signup if needed)"
