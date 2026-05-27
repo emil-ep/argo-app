@@ -12,7 +12,9 @@ data:
   api.url: "http://ecommerce-dev.local:30839"
   
   # Instana End User Monitoring (EUM) configuration
-  # instana.eum.key is now set via secretGenerator in overlays
+  # This key should be updated via kubectl or in your CI/CD pipeline
+  # Get this from your Instana account: Settings > Websites & Mobile Apps
+  instana.eum.key: "CHANGE_ME_INSTANA_EUM_KEY"
   instana.eum.url: "https://eum.instana.io"
 
 # Made with Bob
