@@ -5,9 +5,13 @@ metadata:
   labels:
     app: database
     component: seed
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
 spec:
   ttlSecondsAfterFinished: 300
-  backoffLimit: 3
+  backoffLimit: 6
   template:
     metadata:
       labels:
@@ -15,6 +19,29 @@ spec:
         component: seed
     spec:
       restartPolicy: Never
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:15-alpine
+        command:
+        - sh
+        - -c
+        - until pg_isready -h "$DATABASE_HOST" -p "$DATABASE_PORT" -U "$DATABASE_USER"; do sleep 2; done
+        env:
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: database.host
+        - name: DATABASE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: database.port
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: database.user
       containers:
       - name: seed
         image: ecommerce-backend:latest
