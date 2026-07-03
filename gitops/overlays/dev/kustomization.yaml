@@ -10,7 +10,6 @@ bases:
 
 resources:
   - ingress.yaml
-  - namespace.yaml
 
 patchesStrategicMerge:
   # backend-patch.yaml removed - using Rollout instead of Deployment
