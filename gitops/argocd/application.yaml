@@ -42,5 +42,15 @@ spec:
         - /spec/template/metadata/labels/batch.kubernetes.io~1job-name
         - /spec/template/metadata/labels/controller-uid
         - /spec/template/metadata/labels/job-name
+    - group: networking.k8s.io
+      kind: Ingress
+      name: ecommerce-ingress
+      jsonPointers:
+        - /metadata/annotations/nginx.ingress.kubernetes.io~1canary
+        - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-by-header
+        - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-by-header-pattern
+        - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-by-header-value
+        - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-by-cookie
+        - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-weight
 
 # Made with Bob
