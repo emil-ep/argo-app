@@ -139,10 +139,12 @@ spec:
         - name: service-name
           value: ecommerce-backend
         - name: instana-server-url
+          # secretKeyRef is the only supported valueFrom for analysis args
+          # (configMapKeyRef is not supported by Argo Rollouts)
           valueFrom:
-            configMapKeyRef:
-              name: backend-config
-              key: instana.server.url
+            secretKeyRef:
+              name: instana-credentials
+              key: serverUrl
         # instana-api-token is sourced directly from the Secret inside the
         # AnalysisTemplate — no need to pass it here
         - name: canary-pod-hash
