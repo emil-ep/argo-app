@@ -89,11 +89,18 @@ if kubectl get ingress backend-ecommerce-ingress-canary -n ecommerce-dev &> /dev
     echo -e "${GREEN}✓ Canary ingress removed${NC}"
 fi
 
-# Step 4: Delete all resources using kustomize (belt-and-suspenders cleanup)
+# Step 4: Delete the instana-credentials secret (not managed by kustomize)
+if kubectl get secret instana-credentials -n ecommerce-dev &> /dev/null 2>&1; then
+    echo "Removing instana-credentials secret..."
+    kubectl delete secret instana-credentials -n ecommerce-dev --wait=false 2>/dev/null || true
+    echo -e "${GREEN}✓ instana-credentials secret removed${NC}"
+fi
+
+# Step 5: Delete all resources using kustomize (belt-and-suspenders cleanup)
 echo "Removing application resources via kustomize..."
 kubectl delete -k gitops/overlays/dev --wait=false 2>/dev/null || true
 
-# Step 5: Force delete namespace
+# Step 6: Force delete namespace
 echo "Removing namespace..."
 kubectl delete namespace ecommerce-dev --wait=false 2>/dev/null || true
 

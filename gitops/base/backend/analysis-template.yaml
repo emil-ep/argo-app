@@ -1,73 +1,44 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
-  name: backend-success-rate
+  name: instana-error-rate
 spec:
   args:
-  - name: service-name
-  - name: prometheus-url
-    value: http://prometheus.monitoring.svc.cluster.local:9090
-  
+    - name: service-name
+    - name: instana-server-url
+    - name: instana-api-token
+      # Sourced from a Secret so the token is never stored in plain text in the manifest
+      valueFrom:
+        secretKeyRef:
+          name: instana-credentials
+          key: apiToken
+    # canary-pod-hash is injected automatically by Argo Rollouts from the
+    # rollouts-pod-template-hash label; it isolates the query to canary pods only.
+    - name: canary-pod-hash
   metrics:
-  # Success rate metric
-  - name: success-rate
-    interval: 30s
-    successCondition: result[0] >= 0.95
-    failureLimit: 3
-    provider:
-      prometheus:
-        address: "{{args.prometheus-url}}"
-        query: |
-          sum(rate(
-            http_requests_total{
-              service="{{args.service-name}}",
-              status=~"2.."
-            }[2m]
-          )) 
-          / 
-          sum(rate(
-            http_requests_total{
-              service="{{args.service-name}}"
-            }[2m]
-          ))
-  
-  # Error rate metric
-  - name: error-rate
-    interval: 30s
-    successCondition: result[0] <= 0.05
-    failureLimit: 3
-    provider:
-      prometheus:
-        address: "{{args.prometheus-url}}"
-        query: |
-          sum(rate(
-            http_requests_total{
-              service="{{args.service-name}}",
-              status=~"5.."
-            }[2m]
-          )) 
-          / 
-          sum(rate(
-            http_requests_total{
-              service="{{args.service-name}}"
-            }[2m]
-          ))
-  
-  # Response time metric (p95)
-  - name: response-time-p95
-    interval: 30s
-    successCondition: result[0] <= 500
-    failureLimit: 3
-    provider:
-      prometheus:
-        address: "{{args.prometheus-url}}"
-        query: |
-          histogram_quantile(0.95,
-            sum(rate(
-              http_request_duration_milliseconds_bucket{
-                service="{{args.service-name}}"
-              }[2m]
-            )) by (le)
-          )
+    - name: error-rate
+      # Measure every 30 seconds
+      interval: 30s
+      # Require 3 consecutive successful measurements before promoting
+      count: 3
+      # Promote if error rate stays below 5%
+      successCondition: result < 5.0
+      # Roll back immediately if error rate exceeds 20%
+      failureCondition: result >= 20.0
+      # Allow up to 1 consecutive measurement error (network glitch, etc.) before failing
+      consecutiveErrorLimit: 1
+      provider:
+        plugin:
+          instana/rollouts-plugin:
+            serverUrl: "{{args.instana-server-url}}"
+            apiToken: "{{args.instana-api-token}}"
+            serviceName: "{{args.service-name}}"
+            # Isolates the metric query to the canary replica set only.
+            # Remove this field if you want to measure all pods.
+            canaryPodHash: "{{args.canary-pod-hash}}"
+            # Look back 60 seconds for each measurement
+            windowSize: 60
+            # Return the error-rate percentage (0-100); can also be "calls" or "errors"
+            metricType: errorRate
 
 # Made with Bob
