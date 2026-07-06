@@ -96,13 +96,6 @@ kubectl create secret generic backend-secret \
   -n ecommerce-dev \
   --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null
 
-# Create frontend configmap
-echo "Creating frontend-config..."
-kubectl create configmap frontend-config \
-  --from-env-file=gitops/overlays/dev/frontend-secrets.env \
-  -n ecommerce-dev \
-  --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null
-
 echo -e "${GREEN}✓ Secrets and ConfigMaps created${NC}"
 echo ""
 
@@ -155,16 +148,6 @@ fi
 
 echo ""
 
-# Update ConfigMap with actual values from frontend-secrets.env
-echo "Updating frontend-config with actual values..."
-kubectl create configmap frontend-config \
-  --from-env-file=gitops/overlays/dev/frontend-secrets.env \
-  -n ecommerce-dev \
-  --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null
-
-echo -e "${GREEN}✓ ConfigMap updated${NC}"
-echo ""
-
 # Step 4: Wait for pods to be ready
 echo -e "${GREEN}Step 4: Waiting for Pods to be Ready${NC}"
 echo "-------------------------------------"
@@ -173,8 +156,31 @@ echo ""
 echo "Waiting for database to be ready..."
 kubectl wait --for=condition=ready pod -l app=postgres -n ecommerce-dev --timeout=120s 2>/dev/null || true
 
+# Kick the Rollout if it has no current pods (can happen after a namespace reset)
+ROLLOUT_CURRENT=$(kubectl get rollout backend -n ecommerce-dev \
+  -o jsonpath='{.status.replicas}' 2>/dev/null || echo "0")
+if [ "${ROLLOUT_CURRENT:-0}" = "0" ]; then
+    echo "Restarting stalled backend rollout..."
+    kubectl patch rollout backend -n ecommerce-dev \
+      --type merge \
+      -p '{"spec":{"restartAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}}' 2>/dev/null || true
+fi
+
 echo "Waiting for backend to be ready..."
-kubectl wait --for=condition=ready pod -l app=backend -n ecommerce-dev --timeout=120s 2>/dev/null || true
+# Wait for at least one backend pod to be ready (Rollout manages the pods)
+for i in {1..60}; do
+    READY=$(kubectl get pods -n ecommerce-dev -l app=backend \
+      --field-selector=status.phase=Running \
+      -o jsonpath='{.items[*].status.containerStatuses[*].ready}' 2>/dev/null \
+      | tr ' ' '\n' | grep -c true || echo 0)
+    if [ "${READY}" -gt "0" ]; then
+        echo -e "${GREEN}✓ Backend ready (${READY} pods)${NC}"
+        break
+    fi
+    echo -n "."
+    sleep 3
+done
+echo ""
 
 echo "Waiting for frontend to be ready..."
 kubectl wait --for=condition=ready pod -l app=frontend -n ecommerce-dev --timeout=120s 2>/dev/null || true
@@ -202,6 +208,16 @@ NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="
 
 # Get ingress info
 INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "ecommerce-dev.local")
+
+# Patch frontend-config with the actual backend NodePort so the UI can reach the API
+if [ "$BACKEND_NODEPORT" != "N/A" ] && [ "$NODE_IP" != "localhost" ]; then
+    echo "Patching frontend-config api.url to http://${NODE_IP}:${BACKEND_NODEPORT}..."
+    kubectl patch configmap frontend-config -n ecommerce-dev \
+      --type merge \
+      -p "{\"data\":{\"api.url\":\"http://${NODE_IP}:${BACKEND_NODEPORT}\"}}" 2>/dev/null || true
+    echo -e "${GREEN}✓ frontend-config api.url updated${NC}"
+fi
+echo ""
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"

@@ -49,15 +49,28 @@ echo ""
 echo -e "${GREEN}Starting uninstallation...${NC}"
 echo ""
 
-# Check if ArgoCD application exists
+# Check if ArgoCD application exists and remove it first
 if kubectl get application ecommerce-dev -n argocd &> /dev/null 2>&1; then
     echo "Removing ArgoCD application..."
+
+    # 1. Stop automated sync so ArgoCD stops reconciling immediately
+    kubectl patch application ecommerce-dev -n argocd \
+      --type merge \
+      -p '{"spec":{"syncPolicy":{"automated":null}}}' 2>/dev/null || true
+
+    # 2. Strip the deletion finalizer so delete is instant and never blocks
+    kubectl patch application ecommerce-dev -n argocd \
+      --type merge \
+      -p '{"metadata":{"finalizers":[]}}' 2>/dev/null || true
+
+    # 3. Now delete — no finalizer means this returns immediately
     kubectl delete application ecommerce-dev -n argocd --wait=false 2>/dev/null || true
+
     echo -e "${GREEN}✓ ArgoCD application removed${NC}"
     echo ""
 fi
 
-# Delete all resources using kustomize
+# Delete all resources using kustomize (belt-and-suspenders cleanup)
 echo "Removing application resources..."
 kubectl delete -k gitops/overlays/dev --wait=false 2>/dev/null || true
 

@@ -62,7 +62,6 @@ exports.createOrder = async (req, res) => {
   try {
     const { shipping_address } = req.body;
 
-    // Throw 500 when shipping address is missing so Instana captures it as an error
     if (!shipping_address || !shipping_address.trim()) {
       const err = new Error('Shipping address is required');
       const currentSpan = instana.currentSpan();
