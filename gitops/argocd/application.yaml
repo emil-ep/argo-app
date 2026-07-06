@@ -52,10 +52,4 @@ spec:
         - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-by-header-value
         - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-by-cookie
         - /metadata/annotations/nginx.ingress.kubernetes.io~1canary-weight
-    - group: ""
-      kind: ConfigMap
-      name: frontend-config
-      jsonPointers:
-        - /data
-
 # Made with Bob
