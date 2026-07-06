@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import CartPage from './pages/CartPage';
 import { CartProvider } from './context/CartContext';
 import CheckoutPage from './pages/CheckoutPage';
+import ErrorSimulatorPage from './pages/ErrorSimulatorPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import Navbar from './components/Navbar';
@@ -63,6 +64,7 @@ function App() {
                 }
               />
               
+              <Route path="/error-simulator" element={<ErrorSimulatorPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>

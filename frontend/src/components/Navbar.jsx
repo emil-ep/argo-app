@@ -37,6 +37,9 @@ const Navbar = () => {
             <Button color="inherit" onClick={() => navigate('/orders')}>
               Orders
             </Button>
+            <Button color="inherit" onClick={() => navigate('/error-simulator')}>
+              Error Simulator
+            </Button>
             <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
               <AccountCircle sx={{ mr: 1 }} />
               <Typography variant="body2" sx={{ mr: 2 }}>
