@@ -37,15 +37,6 @@ if ! kubectl cluster-info &> /dev/null; then
 fi
 echo "  ✓ Kubernetes cluster accessible"
 
-# Detect ingress controller
-TRAEFIK_PORT=$(kubectl get svc traefik -n kube-system \
-  -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 2>/dev/null || echo "")
-if [ -n "$TRAEFIK_PORT" ]; then
-    echo "  ✓ Traefik ingress controller detected (NodePort ${TRAEFIK_PORT})"
-else
-    echo -e "  ${YELLOW}⚠ Traefik not found — ingress routing may not work${NC}"
-fi
-
 # Check if ArgoCD is installed
 ARGOCD_INSTALLED=false
 if kubectl get namespace argocd &> /dev/null; then
@@ -177,7 +168,6 @@ if [ "${ROLLOUT_CURRENT:-0}" = "0" ]; then
 fi
 
 echo "Waiting for backend to be ready..."
-# Wait for at least one backend pod to be ready (Rollout manages the pods)
 for i in {1..60}; do
     READY=$(kubectl get pods -n ecommerce-dev -l app=backend \
       --field-selector=status.phase=Running \
@@ -199,7 +189,7 @@ echo ""
 echo -e "${GREEN}✓ All pods are ready${NC}"
 echo ""
 
-# Step 5: Patch frontend-config with the correct API URL and display access info
+# Step 5: Patch frontend-config with the backend NodePort URL
 echo -e "${GREEN}Step 5: Configuring Frontend API URL${NC}"
 echo "-------------------------------------"
 echo ""
@@ -209,20 +199,15 @@ NODE_IP=$(kubectl get nodes \
   -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' \
   2>/dev/null || echo "localhost")
 
-# Get ingress host
-INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev \
-  -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "ecommerce-dev.local")
+# Get backend NodePort (defined as 30300 in service.yaml)
+BACKEND_NODEPORT=$(kubectl get svc backend -n ecommerce-dev \
+  -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30300")
 
-# Get Traefik NodePort (re-read in case it changed)
-TRAEFIK_PORT=$(kubectl get svc traefik -n kube-system \
-  -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 2>/dev/null || echo "")
+# Get frontend NodePort
+FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev \
+  -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
 
-# Build API URL: prefer Traefik NodePort (works without /etc/hosts), fall back to hostname
-if [ -n "$TRAEFIK_PORT" ] && [ "$NODE_IP" != "localhost" ]; then
-    API_URL="http://${NODE_IP}:${TRAEFIK_PORT}"
-else
-    API_URL="http://${INGRESS_HOST}"
-fi
+API_URL="http://${NODE_IP}:${BACKEND_NODEPORT}"
 
 echo "Patching frontend-config api.url to ${API_URL}..."
 kubectl patch configmap frontend-config -n ecommerce-dev \
@@ -243,21 +228,12 @@ echo -e "${BLUE}  Installation Complete! 🎉${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev \
-  -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
-
 echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"
 echo -e "${GREEN}║  🌐  Access the E-Commerce Application:               ║${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"
-if [ -n "$TRAEFIK_PORT" ] && [ "$NODE_IP" != "localhost" ]; then
-    printf "${GREEN}║  Via Ingress (recommended):                            ║${NC}\n"
-    printf "${GREEN}║      ${YELLOW}%-46s${GREEN}║${NC}\n" "http://${NODE_IP}:${TRAEFIK_PORT}"
-fi
-if [ "$FRONTEND_NODEPORT" != "N/A" ]; then
-    printf "${GREEN}║  Via NodePort (direct):                                ║${NC}\n"
-    printf "${GREEN}║      ${YELLOW}%-46s${GREEN}║${NC}\n" "http://${NODE_IP}:${FRONTEND_NODEPORT}"
-fi
+printf "${GREEN}║  Frontend:  ${YELLOW}%-43s${GREEN}║${NC}\n" "http://${NODE_IP}:${FRONTEND_NODEPORT}"
+printf "${GREEN}║  Backend:   ${YELLOW}%-43s${GREEN}║${NC}\n" "http://${NODE_IP}:${BACKEND_NODEPORT}"
 echo -e "${GREEN}║                                                        ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
@@ -269,14 +245,10 @@ if [ "$DEPLOY_METHOD" = "1" ]; then
 fi
 
 echo -e "${CYAN}Useful Commands:${NC}"
-echo "  View info:        ./show-info.sh"
-echo "  View pods:        kubectl get pods -n ecommerce-dev"
-echo "  View logs:        kubectl logs -f <pod-name> -n ecommerce-dev"
-echo "  Uninstall:        ./uninstall.sh"
-echo ""
-
-echo -e "${YELLOW}Note:${NC} To use the hostname '${INGRESS_HOST}' instead of IP, add it to /etc/hosts:"
-echo "  echo \"${NODE_IP} ${INGRESS_HOST}\" | sudo tee -a /etc/hosts"
+echo "  View info:     ./show-info.sh"
+echo "  View pods:     kubectl get pods -n ecommerce-dev"
+echo "  View logs:     kubectl logs -f <pod-name> -n ecommerce-dev"
+echo "  Uninstall:     ./uninstall.sh"
 echo ""
 
 echo -e "${GREEN}Installation completed successfully!${NC}"

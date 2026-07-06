@@ -8,9 +8,6 @@ bases:
   - ../../base/backend
   - ../../base/frontend
 
-resources:
-  - ingress.yaml
-
 patchesStrategicMerge:
   # backend-patch.yaml removed - using Rollout instead of Deployment
   - frontend-patch.yaml
@@ -24,10 +21,10 @@ patchesStrategicMerge:
 images:
   - name: ecommerce-backend
     newName: ghcr.io/emil-ep/argo-app/backend
-    newTag: v1.0.25
+    newTag: v1.0.26
   - name: ecommerce-frontend
     newName: ghcr.io/emil-ep/argo-app/frontend
-    newTag: v1.0.25
+    newTag: v1.0.26
 
 # Note: commonLabels removed to avoid conflicts with Argo Rollouts
 # Argo Rollouts validates that service selectors match rollout selectors
