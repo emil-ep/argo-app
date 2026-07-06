@@ -129,48 +129,43 @@ spec:
       # Number of pods to run for canary
       canaryReplicas: 1
 
-      # Analysis starts at step index 1 (the second step — after setWeight:20 has
-      # deployed the canary pod). Argo Rollouts uses 0-based indexing for startingStep.
-      analysis:
-        templates:
-        - templateName: instana-error-rate
-        startingStep: 1
-        args:
-        - name: service-name
-          value: ecommerce-backend
-        - name: instana-server-url
-          # secretKeyRef is the only supported valueFrom for analysis args
-          # (configMapKeyRef is not supported by Argo Rollouts)
-          valueFrom:
-            secretKeyRef:
-              name: instana-credentials
-              key: serverUrl
-        # instana-api-token is sourced directly from the Secret inside the
-        # AnalysisTemplate — no need to pass it here
-        - name: canary-pod-hash
-          valueFrom:
-            podTemplateHashValue: Latest
-
-      # Steps (0-indexed):
+      # Steps — analysis is an inline step (index 2) so it runs after the canary
+      # pod is live and has served traffic through the first pause.
       steps:
       # Index 0 — deploy 1 canary pod at 20% weight
       - setWeight: 20
-      # Index 1 — analysis begins here; pause while Instana metrics are evaluated
+      # Index 1 — let the canary serve real traffic before measuring
       - pause: {duration: 2m}
-
-      # Step 2: Increase to 40% traffic
+      # Index 2 — run Instana analysis; only promote if error-rate stays < 5%
+      - analysis:
+          templates:
+          - templateName: instana-error-rate
+          args:
+          - name: service-name
+            value: ecommerce-backend
+          - name: instana-server-url
+            valueFrom:
+              secretKeyRef:
+                name: instana-credentials
+                key: serverUrl
+          - name: instana-api-token
+            valueFrom:
+              secretKeyRef:
+                name: instana-credentials
+                key: apiToken
+          - name: canary-pod-hash
+            valueFrom:
+              podTemplateHashValue: Latest
+      # Index 3 — promote to 40%
       - setWeight: 40
       - pause: {duration: 2m}
-
-      # Step 3: Increase to 60% traffic
+      # Index 5 — promote to 60%
       - setWeight: 60
       - pause: {duration: 2m}
-
-      # Step 4: Increase to 80% traffic
+      # Index 7 — promote to 80%
       - setWeight: 80
       - pause: {duration: 2m}
-
-      # Step 5: Full rollout (100%)
+      # Index 9 — full rollout
       - setWeight: 100
 
 # Made with Bob

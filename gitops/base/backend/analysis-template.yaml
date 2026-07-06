@@ -7,11 +7,6 @@ spec:
     - name: service-name
     - name: instana-server-url
     - name: instana-api-token
-      # Sourced from a Secret so the token is never stored in plain text in the manifest
-      valueFrom:
-        secretKeyRef:
-          name: instana-credentials
-          key: apiToken
     # canary-pod-hash is injected automatically by Argo Rollouts from the
     # rollouts-pod-template-hash label; it isolates the query to canary pods only.
     - name: canary-pod-hash
