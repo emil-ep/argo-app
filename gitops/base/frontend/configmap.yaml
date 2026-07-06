@@ -6,10 +6,9 @@ metadata:
     app: frontend
     component: ui
 data:
-  # Full URL to access backend through Ingress (Traefik on port 80)
-  # Frontend and backend are behind the same ingress (ecommerce-dev.local)
-  # Frontend at / and backend at /api
-  api.url: "http://ecommerce-dev.local"
+  # Backend NodePort URL — updated at install time by install.sh
+  # to http://<NODE_IP>:30300 so the browser can reach the backend directly
+  api.url: "http://localhost:30300"
   
   # Instana End User Monitoring (EUM) configuration
   # This key should be updated via kubectl or in your CI/CD pipeline
