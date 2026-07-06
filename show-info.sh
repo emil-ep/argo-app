@@ -27,24 +27,34 @@ if ! kubectl get namespace ecommerce-dev &> /dev/null; then
 fi
 
 # Get node IP
-NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || echo "localhost")
+NODE_IP=$(kubectl get nodes \
+  -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' \
+  2>/dev/null || echo "localhost")
 
-# Get NodePort info
-FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
-BACKEND_NODEPORT=$(kubectl get svc backend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
+# Get Traefik NodePort
+TRAEFIK_PORT=$(kubectl get svc traefik -n kube-system \
+  -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 2>/dev/null || echo "")
 
-# Get ingress info
-INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "N/A")
+# Get frontend NodePort
+FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev \
+  -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
+
+# Get ingress host
+INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev \
+  -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "N/A")
 
 # Display main access URL
 echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"
-echo -e "${GREEN}║  🌐  Access the E-Commerce Application UI:            ║${NC}"
+echo -e "${GREEN}║  🌐  Access the E-Commerce Application:               ║${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"
+if [ -n "$TRAEFIK_PORT" ] && [ "$NODE_IP" != "localhost" ]; then
+    printf "${GREEN}║  Via Ingress (recommended):                            ║${NC}\n"
+    printf "${GREEN}║      ${YELLOW}%-46s${GREEN}║${NC}\n" "http://${NODE_IP}:${TRAEFIK_PORT}"
+fi
 if [ "$FRONTEND_NODEPORT" != "N/A" ]; then
+    printf "${GREEN}║  Via NodePort (direct):                                ║${NC}\n"
     printf "${GREEN}║      ${YELLOW}%-46s${GREEN}║${NC}\n" "http://${NODE_IP}:${FRONTEND_NODEPORT}"
-else
-    echo -e "${GREEN}║      ${RED}Frontend service not found${GREEN}                     ║${NC}"
 fi
 echo -e "${GREEN}║                                                        ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
@@ -56,38 +66,32 @@ echo "----------------------------"
 kubectl get pods -n ecommerce-dev -o wide 2>/dev/null || echo "No pods found"
 echo ""
 
+# Rollout Status
+echo -e "${CYAN}Backend Rollout Status:${NC}"
+echo "----------------------------"
+kubectl get rollout backend -n ecommerce-dev 2>/dev/null || echo "No rollout found"
+echo ""
+
 # Service Information
 echo -e "${CYAN}Service Information:${NC}"
 echo "----------------------------"
-echo -e "Frontend NodePort: ${YELLOW}${FRONTEND_NODEPORT}${NC}"
-echo -e "Backend NodePort:  ${YELLOW}${BACKEND_NODEPORT}${NC}"
+kubectl get svc -n ecommerce-dev 2>/dev/null || echo "No services found"
 echo ""
 
-# Access URLs
-echo -e "${CYAN}Access URLs:${NC}"
+# Ingress
+echo -e "${CYAN}Ingress:${NC}"
 echo "----------------------------"
-if [ "$FRONTEND_NODEPORT" != "N/A" ]; then
-    echo -e "Frontend (NodePort): ${GREEN}http://${NODE_IP}:${FRONTEND_NODEPORT}${NC}"
-fi
-if [ "$BACKEND_NODEPORT" != "N/A" ]; then
-    echo -e "Backend (NodePort):  ${GREEN}http://${NODE_IP}:${BACKEND_NODEPORT}${NC}"
-fi
-if [ "$INGRESS_HOST" != "N/A" ]; then
-    echo ""
-    echo "Via Ingress:"
-    echo -e "  Frontend: ${GREEN}http://${INGRESS_HOST}/${NC}"
-    echo -e "  Backend:  ${GREEN}http://${INGRESS_HOST}/api${NC}"
-    echo ""
-    echo -e "${YELLOW}Note:${NC} Add to /etc/hosts: ${NODE_IP} ${INGRESS_HOST}"
-fi
+kubectl get ingress -n ecommerce-dev 2>/dev/null || echo "No ingresses found"
 echo ""
 
 # ArgoCD Application Status (if exists)
-if kubectl get application ecommerce-dev -n argocd &> /dev/null; then
+if kubectl get application ecommerce-dev -n argocd &> /dev/null 2>&1; then
     echo -e "${CYAN}ArgoCD Application:${NC}"
     echo "----------------------------"
-    SYNC_STATUS=$(kubectl get application ecommerce-dev -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
-    HEALTH_STATUS=$(kubectl get application ecommerce-dev -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
+    SYNC_STATUS=$(kubectl get application ecommerce-dev -n argocd \
+      -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
+    HEALTH_STATUS=$(kubectl get application ecommerce-dev -n argocd \
+      -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
     echo -e "Sync Status:   ${YELLOW}${SYNC_STATUS}${NC}"
     echo -e "Health Status: ${YELLOW}${HEALTH_STATUS}${NC}"
     echo ""
@@ -96,15 +100,23 @@ fi
 # Useful Commands
 echo -e "${CYAN}Useful Commands:${NC}"
 echo "----------------------------"
-echo "  View pods:           kubectl get pods -n ecommerce-dev"
-echo "  View services:       kubectl get svc -n ecommerce-dev"
-echo "  View logs (frontend): kubectl logs -f deployment/frontend -n ecommerce-dev"
-echo "  View logs (backend):  kubectl logs -f deployment/backend -n ecommerce-dev"
-echo "  Restart frontend:    kubectl rollout restart deployment/frontend -n ecommerce-dev"
-echo "  Restart backend:     kubectl rollout restart deployment/backend -n ecommerce-dev"
-echo "  Uninstall:           ./uninstall.sh"
+echo "  View pods:             kubectl get pods -n ecommerce-dev"
+echo "  View services:         kubectl get svc -n ecommerce-dev"
+echo "  View rollout:          kubectl get rollout backend -n ecommerce-dev"
+echo "  Logs (frontend):       kubectl logs -f deployment/frontend -n ecommerce-dev"
+echo "  Logs (backend):        kubectl logs -f -l app=backend -n ecommerce-dev"
+echo "  Restart frontend:      kubectl rollout restart deployment/frontend -n ecommerce-dev"
+echo "  Restart backend:       kubectl patch rollout backend -n ecommerce-dev --type merge -p '{\"spec\":{\"restartAt\":\"'\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"'\"}}'"
+echo "  Uninstall:             ./uninstall.sh"
 echo ""
 
+if [ "$INGRESS_HOST" != "N/A" ]; then
+    echo -e "${YELLOW}Note:${NC} To use hostname '${INGRESS_HOST}', add to /etc/hosts:"
+    echo "  echo \"${NODE_IP} ${INGRESS_HOST}\" | sudo tee -a /etc/hosts"
+    echo ""
+fi
+
 echo -e "${GREEN}For more details, check the documentation in the docs/ directory.${NC}"
+echo ""
 
 # Made with Bob

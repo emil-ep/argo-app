@@ -10,6 +10,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Script directory
@@ -35,6 +36,15 @@ if ! kubectl cluster-info &> /dev/null; then
     exit 1
 fi
 echo "  ✓ Kubernetes cluster accessible"
+
+# Detect ingress controller
+TRAEFIK_PORT=$(kubectl get svc traefik -n kube-system \
+  -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 2>/dev/null || echo "")
+if [ -n "$TRAEFIK_PORT" ]; then
+    echo "  ✓ Traefik ingress controller detected (NodePort ${TRAEFIK_PORT})"
+else
+    echo -e "  ${YELLOW}⚠ Traefik not found — ingress routing may not work${NC}"
+fi
 
 # Check if ArgoCD is installed
 ARGOCD_INSTALLED=false
@@ -65,14 +75,14 @@ echo -e "${GREEN}Step 1: Configuring Secrets${NC}"
 echo "----------------------------"
 echo ""
 
-if [ -f "gitops/overlays/dev/secrets.env" ] && [ -f "gitops/overlays/dev/frontend-secrets.env" ]; then
-    echo -e "${YELLOW}Secret files already exist.${NC}"
+if [ -f "gitops/overlays/dev/secrets.env" ]; then
+    echo -e "${YELLOW}Secret file already exists.${NC}"
     read -p "Do you want to reconfigure secrets? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         ./scripts/setup-secrets.sh
     else
-        echo "Using existing secret files..."
+        echo "Using existing secret file..."
     fi
 else
     ./scripts/setup-secrets.sh
@@ -80,23 +90,23 @@ fi
 
 echo ""
 
-# Step 2: Create Kubernetes secrets and configmaps
-echo -e "${GREEN}Step 2: Creating Kubernetes Secrets & ConfigMaps${NC}"
-echo "------------------------------------------------"
+# Step 2: Create Kubernetes namespace, secrets, and configmaps
+echo -e "${GREEN}Step 2: Creating Namespace, Secrets & ConfigMaps${NC}"
+echo "-------------------------------------------------"
 echo ""
 
 # Create namespace
 echo "Creating namespace..."
-kubectl create namespace ecommerce-dev --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null || true
+kubectl create namespace ecommerce-dev --dry-run=client -o yaml | kubectl apply -f -
 
-# Create backend secret
+# Create backend secret from secrets.env
 echo "Creating backend-secret..."
 kubectl create secret generic backend-secret \
   --from-env-file=gitops/overlays/dev/secrets.env \
   -n ecommerce-dev \
-  --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null
+  --dry-run=client -o yaml | kubectl apply -f -
 
-echo -e "${GREEN}✓ Secrets and ConfigMaps created${NC}"
+echo -e "${GREEN}✓ Namespace, secrets and configmaps ready${NC}"
 echo ""
 
 # Step 3: Deploy application
@@ -107,27 +117,27 @@ echo ""
 if [ "$DEPLOY_METHOD" = "1" ]; then
     # ArgoCD deployment
     echo "Deploying via ArgoCD..."
-    
-    # Apply ArgoCD application
+
     kubectl apply -f gitops/argocd/application.yaml
-    
+
     echo ""
     echo -e "${GREEN}✓ ArgoCD Application created${NC}"
     echo ""
     echo "Waiting for ArgoCD to sync..."
     sleep 5
-    
-    # Trigger sync
+
+    # Trigger sync against the current HEAD of the default branch
     kubectl patch application ecommerce-dev -n argocd \
       --type merge \
-      -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"master"}}}' 2>/dev/null || true
-    
+      -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}' 2>/dev/null || true
+
     echo ""
     echo -e "${YELLOW}Monitoring deployment (this may take 1-2 minutes)...${NC}"
-    
+
     # Wait for sync
     for i in {1..30}; do
-        SYNC_STATUS=$(kubectl get application ecommerce-dev -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
+        SYNC_STATUS=$(kubectl get application ecommerce-dev -n argocd \
+          -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
         if [ "$SYNC_STATUS" = "Synced" ]; then
             echo -e "${GREEN}✓ Application synced successfully${NC}"
             break
@@ -136,12 +146,12 @@ if [ "$DEPLOY_METHOD" = "1" ]; then
         sleep 2
     done
     echo ""
-    
+
 else
     # Direct kubectl deployment
     echo "Deploying via kubectl..."
     kubectl apply -k gitops/overlays/dev
-    
+
     echo ""
     echo -e "${GREEN}✓ Application deployed${NC}"
 fi
@@ -189,85 +199,87 @@ echo ""
 echo -e "${GREEN}✓ All pods are ready${NC}"
 echo ""
 
-# Step 5: Display access information
+# Step 5: Patch frontend-config with the correct API URL and display access info
+echo -e "${GREEN}Step 5: Configuring Frontend API URL${NC}"
+echo "-------------------------------------"
+echo ""
+
+# Get node IP
+NODE_IP=$(kubectl get nodes \
+  -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' \
+  2>/dev/null || echo "localhost")
+
+# Get ingress host
+INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev \
+  -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "ecommerce-dev.local")
+
+# Get Traefik NodePort (re-read in case it changed)
+TRAEFIK_PORT=$(kubectl get svc traefik -n kube-system \
+  -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 2>/dev/null || echo "")
+
+# Build API URL: prefer Traefik NodePort (works without /etc/hosts), fall back to hostname
+if [ -n "$TRAEFIK_PORT" ] && [ "$NODE_IP" != "localhost" ]; then
+    API_URL="http://${NODE_IP}:${TRAEFIK_PORT}"
+else
+    API_URL="http://${INGRESS_HOST}"
+fi
+
+echo "Patching frontend-config api.url to ${API_URL}..."
+kubectl patch configmap frontend-config -n ecommerce-dev \
+  --type merge \
+  -p "{\"data\":{\"api.url\":\"${API_URL}\"}}" 2>/dev/null || true
+echo -e "${GREEN}✓ frontend-config api.url updated${NC}"
+
+# Restart frontend so the new API_URL env value is picked up
+echo "Restarting frontend to pick up new api.url..."
+kubectl rollout restart deployment/frontend -n ecommerce-dev 2>/dev/null || true
+kubectl rollout status deployment/frontend -n ecommerce-dev --timeout=60s 2>/dev/null || true
+echo -e "${GREEN}✓ Frontend restarted${NC}"
+echo ""
+
+# Step 6: Display access information
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Installation Complete! 🎉${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# Wait a moment for services to get NodePort assigned
-echo "Retrieving service information..."
-sleep 3
-
-# Get NodePort info
-FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
-BACKEND_NODEPORT=$(kubectl get svc backend -n ecommerce-dev -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
-
-# Get node IP
-NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || echo "localhost")
-
-# Get ingress info
-INGRESS_HOST=$(kubectl get ingress ecommerce-ingress -n ecommerce-dev -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "ecommerce-dev.local")
-
-# Patch frontend-config with the actual backend NodePort so the UI can reach the API
-if [ "$BACKEND_NODEPORT" != "N/A" ] && [ "$NODE_IP" != "localhost" ]; then
-    echo "Patching frontend-config api.url to http://${NODE_IP}:${BACKEND_NODEPORT}..."
-    kubectl patch configmap frontend-config -n ecommerce-dev \
-      --type merge \
-      -p "{\"data\":{\"api.url\":\"http://${NODE_IP}:${BACKEND_NODEPORT}\"}}" 2>/dev/null || true
-    echo -e "${GREEN}✓ frontend-config api.url updated${NC}"
-fi
-echo ""
+FRONTEND_NODEPORT=$(kubectl get svc frontend -n ecommerce-dev \
+  -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"
-echo -e "${GREEN}║  🌐  Access the E-Commerce Application UI:            ║${NC}"
+echo -e "${GREEN}║  🌐  Access the E-Commerce Application:               ║${NC}"
 echo -e "${GREEN}║                                                        ║${NC}"
+if [ -n "$TRAEFIK_PORT" ] && [ "$NODE_IP" != "localhost" ]; then
+    printf "${GREEN}║  Via Ingress (recommended):                            ║${NC}\n"
+    printf "${GREEN}║      ${YELLOW}%-46s${GREEN}║${NC}\n" "http://${NODE_IP}:${TRAEFIK_PORT}"
+fi
 if [ "$FRONTEND_NODEPORT" != "N/A" ]; then
+    printf "${GREEN}║  Via NodePort (direct):                                ║${NC}\n"
     printf "${GREEN}║      ${YELLOW}%-46s${GREEN}║${NC}\n" "http://${NODE_IP}:${FRONTEND_NODEPORT}"
-else
-    echo -e "${GREEN}║      ${RED}Waiting for NodePort assignment...${GREEN}         ║${NC}"
 fi
 echo -e "${GREEN}║                                                        ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-echo -e "${GREEN}Additional Access Methods:${NC}"
-echo ""
-echo "  Via Ingress (if configured):"
-echo "    Frontend: http://${INGRESS_HOST}/"
-echo "    Backend:  http://${INGRESS_HOST}/api"
-echo ""
-echo "  Direct NodePort Access:"
-if [ "$FRONTEND_NODEPORT" != "N/A" ]; then
-    echo "    Frontend: http://${NODE_IP}:${FRONTEND_NODEPORT}"
-else
-    echo "    Frontend: (NodePort being assigned...)"
-fi
-if [ "$BACKEND_NODEPORT" != "N/A" ]; then
-    echo "    Backend:  http://${NODE_IP}:${BACKEND_NODEPORT}"
-else
-    echo "    Backend:  (NodePort being assigned...)"
-fi
-echo ""
-
 if [ "$DEPLOY_METHOD" = "1" ]; then
-    echo -e "${GREEN}ArgoCD Application:${NC}"
+    echo -e "${CYAN}ArgoCD Application:${NC}"
     echo "  kubectl get application ecommerce-dev -n argocd"
     echo ""
 fi
 
-echo -e "${GREEN}Useful Commands:${NC}"
+echo -e "${CYAN}Useful Commands:${NC}"
 echo "  View info:        ./show-info.sh"
 echo "  View pods:        kubectl get pods -n ecommerce-dev"
 echo "  View logs:        kubectl logs -f <pod-name> -n ecommerce-dev"
 echo "  Uninstall:        ./uninstall.sh"
 echo ""
 
-echo -e "${YELLOW}Note:${NC} If using Ingress, make sure to add '${INGRESS_HOST}' to your /etc/hosts file:"
+echo -e "${YELLOW}Note:${NC} To use the hostname '${INGRESS_HOST}' instead of IP, add it to /etc/hosts:"
 echo "  echo \"${NODE_IP} ${INGRESS_HOST}\" | sudo tee -a /etc/hosts"
 echo ""
 
 echo -e "${GREEN}Installation completed successfully!${NC}"
 echo ""
-echo -e "${CYAN}💡 Tip: Run ${YELLOW}./show-info.sh${CYAN} anytime to view access URLs and installation details${NC}"
+echo -e "${CYAN}💡 Tip: Run ${YELLOW}./show-info.sh${CYAN} anytime to view access URLs and status.${NC}"
+echo ""
