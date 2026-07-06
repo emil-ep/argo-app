@@ -78,7 +78,6 @@ const CheckoutPage = () => {
             rows={4}
             value={shippingAddress}
             onChange={(e) => setShippingAddress(e.target.value)}
-            required
             margin="normal"
           />
           <Button

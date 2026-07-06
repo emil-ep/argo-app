@@ -49,37 +49,25 @@ echo ""
 echo -e "${GREEN}Starting uninstallation...${NC}"
 echo ""
 
-# Check if ArgoCD application exists and remove it first, waiting for full cleanup
+# Check if ArgoCD application exists and remove it first
 if kubectl get application ecommerce-dev -n argocd &> /dev/null 2>&1; then
-    echo "Removing ArgoCD application (waiting for finalizer cleanup)..."
+    echo "Removing ArgoCD application..."
 
-    # Disable automated sync first so ArgoCD stops reconciling during deletion
+    # 1. Stop automated sync so ArgoCD stops reconciling immediately
     kubectl patch application ecommerce-dev -n argocd \
       --type merge \
       -p '{"spec":{"syncPolicy":{"automated":null}}}' 2>/dev/null || true
 
-    kubectl delete application ecommerce-dev -n argocd 2>/dev/null || true
+    # 2. Strip the deletion finalizer so delete is instant and never blocks
+    kubectl patch application ecommerce-dev -n argocd \
+      --type merge \
+      -p '{"metadata":{"finalizers":[]}}' 2>/dev/null || true
 
-    # Wait for the Application to be fully gone before touching the namespace
-    echo "Waiting for ArgoCD to finish cleanup..."
-    for i in {1..60}; do
-        if ! kubectl get application ecommerce-dev -n argocd &> /dev/null 2>&1; then
-            echo -e "${GREEN}✓ ArgoCD application removed${NC}"
-            break
-        fi
-        echo -n "."
-        sleep 3
-    done
+    # 3. Now delete — no finalizer means this returns immediately
+    kubectl delete application ecommerce-dev -n argocd --wait=false 2>/dev/null || true
+
+    echo -e "${GREEN}✓ ArgoCD application removed${NC}"
     echo ""
-
-    # If still stuck (finalizer hung), force-remove the finalizer
-    if kubectl get application ecommerce-dev -n argocd &> /dev/null 2>&1; then
-        echo -e "${YELLOW}Forcing ArgoCD application finalizer removal...${NC}"
-        kubectl patch application ecommerce-dev -n argocd \
-          --type merge \
-          -p '{"metadata":{"finalizers":[]}}' 2>/dev/null || true
-        sleep 3
-    fi
 fi
 
 # Delete all resources using kustomize (belt-and-suspenders cleanup)
