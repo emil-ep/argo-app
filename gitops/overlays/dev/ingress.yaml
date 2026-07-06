@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: ecommerce-ingress
   annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
     # Remove rewrite-target to preserve the /api prefix
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
