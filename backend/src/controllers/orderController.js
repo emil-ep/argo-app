@@ -62,7 +62,6 @@ exports.createOrder = async (req, res) => {
   try {
     const { shipping_address } = req.body;
 
-    // Validate shipping address and mark Instana span as error if missing
     if (!shipping_address || !shipping_address.trim()) {
       const err = new Error('Shipping address is required');
       const currentSpan = instana.currentSpan();
@@ -70,7 +69,7 @@ exports.createOrder = async (req, res) => {
         currentSpan.markAsErroneous(err);
       }
       await transaction.rollback();
-      return res.status(400).json({ error: 'Shipping address is required' });
+      return res.status(500).json({ error: 'Shipping address is required : mock error' });
     }
 
     // Get cart items
