@@ -4,10 +4,8 @@ metadata:
   name: ecommerce-ingress
   annotations:
     argocd.argoproj.io/ignore-healthcheck: "true"
-    # Remove rewrite-target to preserve the /api prefix
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
   - host: ecommerce-dev.local
     http:
@@ -16,9 +14,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            # Use backend-stable for Argo Rollouts traffic management
-            # Argo Rollouts will automatically manage traffic splitting between
-            # backend-stable and backend-canary services
             name: backend-stable
             port:
               number: 3000

@@ -150,11 +150,9 @@ spec:
       # Step 5: Full rollout (100%)
       - setWeight: 100
       
-      # Traffic routing (requires service mesh or ingress controller)
-      trafficRouting:
-        nginx:
-          stableIngress: ecommerce-ingress
-          annotationPrefix: nginx.ingress.kubernetes.io
+      # Traffic routing disabled - cluster uses Traefik which requires
+      # a different TraefikService/IngressRoute setup for weighted routing.
+      # Argo Rollouts will still manage pod counts via canaryReplicas.
       
       # Analysis for automated promotion/rollback
       # Disabled until Prometheus is installed
