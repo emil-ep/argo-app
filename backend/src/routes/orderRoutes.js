@@ -7,7 +7,7 @@ const { validate, schemas } = require('../middleware/validate');
 router.get('/', auth, orderController.getOrders);
 router.get('/all', adminAuth, orderController.getAllOrders);
 router.get('/:id', auth, orderController.getOrderById);
-router.post('/', auth, validate(schemas.order), orderController.createOrder);
+router.post('/', auth, orderController.createOrder);
 router.put('/:id/status', adminAuth, validate(schemas.updateOrderStatus), orderController.updateOrderStatus);
 
 module.exports = router;
