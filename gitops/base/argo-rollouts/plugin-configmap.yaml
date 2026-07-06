@@ -30,7 +30,7 @@ data:
   # 4. Restart the controller to pick up the new binary:
   #    kubectl rollout restart deployment/argo-rollouts -n argo-rollouts
   #
-  metricPluginsConfig: |
+  metricProviderPlugins: |-
     - name: "instana/rollouts-plugin"
       version: "v0.1.3"
       location: "https://github.com/emil-ep/instana-argo-metric-plugin/releases/download/v0.1.3/instana-rollouts-plugin-linux-amd64"
