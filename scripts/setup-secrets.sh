@@ -103,6 +103,43 @@ if [[ "$INSTANA_AGENT_KEY" == "CHANGE_ME"* ]]; then
     exit 1
 fi
 
+echo ""
+echo -e "${YELLOW}Instana Server URL (for Argo Rollouts canary analysis)${NC}"
+echo "-------------------------------------------------------"
+echo "NOTE: This is the URL of your Instana backend UI/API — NOT the agent endpoint."
+echo "      The canary AnalysisTemplate uses this URL to query Instana for live"
+echo "      error-rate metrics on the canary pods before promoting the rollout."
+echo "      Format: https://<your-unit>.instana.io  (SaaS)"
+echo "              https://<your-on-prem-instana-host>  (self-hosted)"
+echo ""
+read -p "Enter Instana Server URL: " INSTANA_SERVER_URL
+if [ -z "$INSTANA_SERVER_URL" ]; then
+    echo -e "${RED}Error: Instana Server URL is required!${NC}"
+    exit 1
+fi
+if [[ "$INSTANA_SERVER_URL" == "CHANGE_ME"* ]]; then
+    echo -e "${RED}Error: Please provide your actual Instana Server URL, not a placeholder!${NC}"
+    exit 1
+fi
+
+echo ""
+echo -e "${YELLOW}Instana API Token (for Argo Rollouts canary analysis)${NC}"
+echo "------------------------------------------------------"
+echo "NOTE: This token is used alongside the Server URL above — the AnalysisTemplate"
+echo "      authenticates against the Instana backend API to read service metrics."
+echo "Get your API token from: Instana UI → Settings → API Tokens"
+echo "Required permissions: Service metrics read"
+echo ""
+read -p "Enter Instana API Token: " INSTANA_API_TOKEN
+if [ -z "$INSTANA_API_TOKEN" ]; then
+    echo -e "${RED}Error: Instana API Token is required!${NC}"
+    exit 1
+fi
+if [[ "$INSTANA_API_TOKEN" == "CHANGE_ME"* ]]; then
+    echo -e "${RED}Error: Please provide your actual Instana API Token, not a placeholder!${NC}"
+    exit 1
+fi
+
 # Create backend secrets file
 cat > secrets.env << EOF
 # Backend Secrets Configuration
@@ -119,6 +156,11 @@ jwt.secret=$JWT_SECRET
 instana.agent.host=$INSTANA_AGENT_HOST
 instana.agent.port=$INSTANA_AGENT_PORT
 instana.agent.key=$INSTANA_AGENT_KEY
+
+# Instana server URL and API token for Argo Rollouts canary analysis
+# The AnalysisTemplate queries this URL to read error-rate metrics on canary pods
+instana.server.url=$INSTANA_SERVER_URL
+instana.api.token=$INSTANA_API_TOKEN
 EOF
 
 echo -e "${GREEN}✓ Backend secrets file created${NC}"

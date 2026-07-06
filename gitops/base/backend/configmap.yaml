@@ -13,7 +13,12 @@ data:
   
   # CORS configuration - Allow all origins (use specific domains in production)
   cors.origin: "*"
-  
+
+  # Instana server URL for the Rollouts AnalysisTemplate
+  # Value is empty here — install.sh patches this at deploy time from secrets.env
+  # (the URL of the Instana backend API, e.g. https://<unit>.instana.io)
+  instana.server.url: ""
+
   # Rate limiting
   rate.limit.window: "900000"
   rate.limit.max: "100"

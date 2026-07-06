@@ -125,43 +125,50 @@ spec:
       # Service references for traffic routing
       canaryService: backend-canary
       stableService: backend-stable
-      
+
       # Number of pods to run for canary
       canaryReplicas: 1
-      
-      # Steps for progressive rollout
+
+      # Analysis starts at step index 1 (the second step — after setWeight:20 has
+      # deployed the canary pod). Argo Rollouts uses 0-based indexing for startingStep.
+      analysis:
+        templates:
+        - templateName: instana-error-rate
+        startingStep: 1
+        args:
+        - name: service-name
+          value: ecommerce-backend
+        - name: instana-server-url
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: instana.server.url
+        # instana-api-token is sourced directly from the Secret inside the
+        # AnalysisTemplate — no need to pass it here
+        - name: canary-pod-hash
+          valueFrom:
+            podTemplateHashValue: Latest
+
+      # Steps (0-indexed):
       steps:
-      # Step 1: Deploy canary with 20% traffic
+      # Index 0 — deploy 1 canary pod at 20% weight
       - setWeight: 20
+      # Index 1 — analysis begins here; pause while Instana metrics are evaluated
       - pause: {duration: 2m}
-      
+
       # Step 2: Increase to 40% traffic
       - setWeight: 40
       - pause: {duration: 2m}
-      
+
       # Step 3: Increase to 60% traffic
       - setWeight: 60
       - pause: {duration: 2m}
-      
+
       # Step 4: Increase to 80% traffic
       - setWeight: 80
       - pause: {duration: 2m}
-      
+
       # Step 5: Full rollout (100%)
       - setWeight: 100
-      
-      # Traffic routing disabled - cluster uses Traefik which requires
-      # a different TraefikService/IngressRoute setup for weighted routing.
-      # Argo Rollouts will still manage pod counts via canaryReplicas.
-      
-      # Analysis for automated promotion/rollback
-      # Disabled until Prometheus is installed
-      # analysis:
-      #   templates:
-      #   - templateName: backend-success-rate
-      #   startingStep: 1
-      #   args:
-      #   - name: service-name
-      #     value: backend
 
 # Made with Bob

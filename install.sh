@@ -37,6 +37,18 @@ if ! kubectl cluster-info &> /dev/null; then
 fi
 echo "  ✓ Kubernetes cluster accessible"
 
+# Check if Argo Rollouts is installed
+if kubectl get namespace argo-rollouts &> /dev/null; then
+    echo "  ✓ Argo Rollouts detected"
+else
+    echo -e "  ${RED}Error: argo-rollouts namespace not found.${NC}"
+    echo "  Argo Rollouts must be installed before running this script."
+    echo "  Install it with:"
+    echo "    kubectl create namespace argo-rollouts"
+    echo "    kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml"
+    exit 1
+fi
+
 # Check if ArgoCD is installed
 ARGOCD_INSTALLED=false
 if kubectl get namespace argocd &> /dev/null; then
@@ -96,6 +108,49 @@ kubectl create secret generic backend-secret \
   --from-env-file=gitops/overlays/dev/secrets.env \
   -n ecommerce-dev \
   --dry-run=client -o yaml | kubectl apply -f -
+
+# Create instana-credentials secret for the Argo Rollouts AnalysisTemplate
+# This secret holds the API token used to authenticate against the Instana
+# backend API so the AnalysisTemplate can query error-rate metrics on canary pods
+echo "Creating instana-credentials secret..."
+INSTANA_API_TOKEN=$(grep '^instana.api.token=' gitops/overlays/dev/secrets.env \
+  | cut -d= -f2- | tr -d '[:space:]')
+if [ -n "$INSTANA_API_TOKEN" ]; then
+    kubectl create secret generic instana-credentials \
+      --from-literal=apiToken="$INSTANA_API_TOKEN" \
+      -n ecommerce-dev \
+      --dry-run=client -o yaml | kubectl apply -f -
+    echo -e "${GREEN}✓ instana-credentials secret created${NC}"
+else
+    echo -e "${YELLOW}⚠ instana.api.token not found in secrets.env — skipping instana-credentials secret${NC}"
+    echo "  The canary analysis will fail until this secret is created."
+fi
+
+# Patch backend-config with the Instana server URL
+# This URL is used by the Argo Rollouts AnalysisTemplate to query the Instana
+# backend API for live error-rate metrics on canary pods before promoting a rollout
+echo "Patching backend-config instana.server.url..."
+INSTANA_SERVER_URL=$(grep '^instana.server.url=' gitops/overlays/dev/secrets.env \
+  | cut -d= -f2- | tr -d '[:space:]')
+if [ -n "$INSTANA_SERVER_URL" ]; then
+    kubectl patch configmap backend-config -n ecommerce-dev \
+      --type merge \
+      -p "{\"data\":{\"instana.server.url\":\"${INSTANA_SERVER_URL}\"}}" 2>/dev/null || true
+    echo -e "${GREEN}✓ backend-config instana.server.url updated${NC}"
+else
+    echo -e "${YELLOW}⚠ instana.server.url not found in secrets.env — canary analysis will not function${NC}"
+fi
+
+# Register the Instana Rollouts metric plugin with the Argo Rollouts controller.
+# This ConfigMap tells the controller the binary location to download at startup.
+# Without this, any AnalysisRun using instana/rollouts-plugin will fail immediately.
+echo "Registering Instana Rollouts plugin with Argo Rollouts controller..."
+kubectl apply -f gitops/base/argo-rollouts/plugin-configmap.yaml
+echo -e "${GREEN}✓ Argo Rollouts plugin configmap applied${NC}"
+echo -e "${YELLOW}  Note: The controller will download the plugin binary on its next restart.${NC}"
+echo -e "${YELLOW}  Restart it now to ensure the plugin is ready before the first rollout:${NC}"
+echo -e "${YELLOW}    kubectl rollout restart deployment/argo-rollouts -n argo-rollouts${NC}"
+echo ""
 
 echo -e "${GREEN}✓ Namespace, secrets and configmaps ready${NC}"
 echo ""
