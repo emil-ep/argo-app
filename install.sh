@@ -156,8 +156,31 @@ echo ""
 echo "Waiting for database to be ready..."
 kubectl wait --for=condition=ready pod -l app=postgres -n ecommerce-dev --timeout=120s 2>/dev/null || true
 
+# Kick the Rollout if it has no current pods (can happen after a namespace reset)
+ROLLOUT_CURRENT=$(kubectl get rollout backend -n ecommerce-dev \
+  -o jsonpath='{.status.replicas}' 2>/dev/null || echo "0")
+if [ "${ROLLOUT_CURRENT:-0}" = "0" ]; then
+    echo "Restarting stalled backend rollout..."
+    kubectl patch rollout backend -n ecommerce-dev \
+      --type merge \
+      -p '{"spec":{"restartAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}}' 2>/dev/null || true
+fi
+
 echo "Waiting for backend to be ready..."
-kubectl wait --for=condition=ready pod -l app=backend -n ecommerce-dev --timeout=120s 2>/dev/null || true
+# Wait for at least one backend pod to be ready (Rollout manages the pods)
+for i in {1..60}; do
+    READY=$(kubectl get pods -n ecommerce-dev -l app=backend \
+      --field-selector=status.phase=Running \
+      -o jsonpath='{.items[*].status.containerStatuses[*].ready}' 2>/dev/null \
+      | tr ' ' '\n' | grep -c true || echo 0)
+    if [ "${READY}" -gt "0" ]; then
+        echo -e "${GREEN}✓ Backend ready (${READY} pods)${NC}"
+        break
+    fi
+    echo -n "."
+    sleep 3
+done
+echo ""
 
 echo "Waiting for frontend to be ready..."
 kubectl wait --for=condition=ready pod -l app=frontend -n ecommerce-dev --timeout=120s 2>/dev/null || true
