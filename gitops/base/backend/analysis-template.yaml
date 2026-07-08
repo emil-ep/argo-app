@@ -5,8 +5,20 @@ metadata:
 spec:
   args:
     - name: service-name
+    # Credentials are resolved directly from the secret by the controller at
+    # measurement time. Do NOT pass these from the Rollout step args — Argo
+    # Rollouts does not resolve secretKeyRef when creating an AnalysisRun from
+    # a canary steps[].analysis block.
     - name: instana-server-url
+      valueFrom:
+        secretKeyRef:
+          name: instana-credentials
+          key: serverUrl
     - name: instana-api-token
+      valueFrom:
+        secretKeyRef:
+          name: instana-credentials
+          key: apiToken
     # canary-pod-hash is injected automatically by Argo Rollouts from the
     # rollouts-pod-template-hash label; it isolates the query to canary pods only.
     - name: canary-pod-hash
