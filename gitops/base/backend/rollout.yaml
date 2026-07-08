@@ -143,16 +143,8 @@ spec:
           args:
           - name: service-name
             value: ecommerce-backend
-          - name: instana-server-url
-            valueFrom:
-              secretKeyRef:
-                name: instana-credentials
-                key: serverUrl
-          - name: instana-api-token
-            valueFrom:
-              secretKeyRef:
-                name: instana-credentials
-                key: apiToken
+          # instana-server-url and instana-api-token are resolved from the
+          # instana-credentials secret inside the AnalysisTemplate itself.
           - name: canary-pod-hash
             valueFrom:
               podTemplateHashValue: Latest
