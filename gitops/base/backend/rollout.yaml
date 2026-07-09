@@ -141,10 +141,14 @@ spec:
           templates:
           - templateName: instana-error-rate
           args:
-          - name: service-name
-            value: ecommerce-backend
           # instana-server-url and instana-api-token are resolved from the
           # instana-credentials secret inside the AnalysisTemplate itself.
+          # cluster-name must match the cluster name as it appears in Instana
+          # (Settings → Infrastructure → Kubernetes).
+          - name: cluster-name
+            value: ecommerce-cluster
+          # namespace-name is populated automatically from the AnalysisRun's
+          # ObjectMeta via fieldRef — no value needed here.
           - name: canary-pod-hash
             valueFrom:
               podTemplateHashValue: Latest
