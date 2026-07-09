@@ -32,6 +32,6 @@ data:
   #
   metricProviderPlugins: |-
     - name: "instana/rollouts-plugin"
-      version: "v0.1.4"
-      location: "https://github.com/emil-ep/instana-argo-metric-plugin/releases/download/v0.1.4/instana-rollouts-plugin-linux-amd64"
-      sha256: "8bc5379754a0e18a6634b2958776007c5be838a87f826adb60588f49fedcb16b"
+      version: "v0.1.5"
+      location: "https://github.com/emil-ep/instana-argo-metric-plugin/releases/download/v0.1.5/instana-rollouts-plugin-linux-amd64"
+      sha256: "5bb664924496b704b6fc7b57099b891531ce46bcb57129ad6ec87d6ef5b95b7f"

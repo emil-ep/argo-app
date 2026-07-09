@@ -4,7 +4,6 @@ metadata:
   name: instana-error-rate
 spec:
   args:
-    - name: service-name
     # Credentials are resolved directly from the secret by the controller at
     # measurement time. Do NOT pass these from the Rollout step args — Argo
     # Rollouts does not resolve secretKeyRef when creating an AnalysisRun from
@@ -19,6 +18,15 @@ spec:
         secretKeyRef:
           name: instana-credentials
           key: apiToken
+    # clusterName must be supplied by the Rollout — Kubernetes does not expose
+    # the cluster name inside the cluster, so there is no automatic valueFrom.
+    - name: cluster-name
+    # namespace-name is injected automatically from the AnalysisRun's own
+    # namespace via fieldRef. No manual value needed in the Rollout args.
+    - name: namespace-name
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
     # canary-pod-hash is injected automatically by Argo Rollouts from the
     # rollouts-pod-template-hash label; it isolates the query to canary pods only.
     - name: canary-pod-hash
@@ -39,7 +47,8 @@ spec:
           instana/rollouts-plugin:
             serverUrl: "{{args.instana-server-url}}"
             apiToken: "{{args.instana-api-token}}"
-            serviceName: "{{args.service-name}}"
+            clusterName: "{{args.cluster-name}}"
+            namespaceName: "{{args.namespace-name}}"
             # Isolates the metric query to the canary replica set only.
             # Remove this field if you want to measure all pods.
             canaryPodHash: "{{args.canary-pod-hash}}"
