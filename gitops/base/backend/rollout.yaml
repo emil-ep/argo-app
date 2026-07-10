@@ -146,7 +146,7 @@ spec:
           # cluster-name must match the cluster name as it appears in Instana
           # (Settings → Infrastructure → Kubernetes).
           - name: cluster-name
-            value: ecommerce-cluster
+            value: 
           # namespace-name is handled by the plugin from analysisRun.Namespace.
           - name: canary-pod-hash
             valueFrom:
@@ -162,5 +162,3 @@ spec:
       - pause: {duration: 2m}
       # Index 9 — full rollout
       - setWeight: 100
-
-# Made with Bob
