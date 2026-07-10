@@ -147,8 +147,7 @@ spec:
           # (Settings → Infrastructure → Kubernetes).
           - name: cluster-name
             value: ecommerce-cluster
-          # namespace-name is populated automatically from the AnalysisRun's
-          # ObjectMeta via fieldRef — no value needed here.
+          # namespace-name is handled by the plugin from analysisRun.Namespace.
           - name: canary-pod-hash
             valueFrom:
               podTemplateHashValue: Latest
