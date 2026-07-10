@@ -29,6 +29,11 @@ spec:
         factor: 2
         maxDuration: 3m
   ignoreDifferences:
+    - group: ""
+      kind: ConfigMap
+      name: frontend-config
+      jsonPointers:
+        - /data/api.url
     - group: argoproj.io
       kind: Rollout
       jsonPointers:
