@@ -21,12 +21,9 @@ spec:
     # clusterName must be supplied by the Rollout — Kubernetes does not expose
     # the cluster name inside the cluster, so there is no automatic valueFrom.
     - name: cluster-name
-    # namespace-name is injected automatically from the AnalysisRun's own
-    # namespace via fieldRef. No manual value needed in the Rollout args.
-    - name: namespace-name
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
+    # namespace-name is NOT declared here — fieldRef is not supported in
+    # AnalysisTemplate args. The plugin reads it directly from the AnalysisRun's
+    # own ObjectMeta (analysisRun.Namespace) as a built-in fallback.
     # canary-pod-hash is injected automatically by Argo Rollouts from the
     # rollouts-pod-template-hash label; it isolates the query to canary pods only.
     - name: canary-pod-hash
@@ -48,7 +45,7 @@ spec:
             serverUrl: "{{args.instana-server-url}}"
             apiToken: "{{args.instana-api-token}}"
             clusterName: "{{args.cluster-name}}"
-            namespaceName: "{{args.namespace-name}}"
+            # namespaceName is omitted — the plugin falls back to analysisRun.Namespace
             # Isolates the metric query to the canary replica set only.
             # Remove this field if you want to measure all pods.
             canaryPodHash: "{{args.canary-pod-hash}}"
