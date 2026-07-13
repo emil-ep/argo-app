@@ -35,8 +35,8 @@ spec:
       count: 3
       # Promote if error rate stays below 5%
       successCondition: result < 5.0
-      # Roll back immediately if error rate exceeds 20%
-      failureCondition: result >= 20.0
+      # Roll back if error rate is 5% or above
+      failureCondition: result >= 5.0
       # Allow up to 1 consecutive measurement error (network glitch, etc.) before failing
       consecutiveErrorLimit: 1
       provider:
