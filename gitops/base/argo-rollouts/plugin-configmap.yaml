@@ -15,23 +15,21 @@ data:
   #
   #   provider:
   #     plugin:
-  #       instana/rollouts-plugin: ...
+  #       instana/metrics: ...
   #
-  # ...will invoke this binary to query Instana for error-rate metrics on the
-  # canary pods before each promotion step.
+  # ...will invoke this binary to query Instana for metrics on the canary pods
+  # before each promotion step.
   #
   # UPDATING THE VERSION
   # --------------------
   # 1. Find the latest release at:
-  #    https://github.com/emil-ep/instana-argo-metric-plugin/releases
-  # 2. Download the linux-amd64 binary and compute its sha256:
-  #    curl -sLO <download-url> && sha256sum instana-rollouts-plugin-linux-amd64
-  # 3. Update `version`, `location`, and `sha256` below.
+  #    https://github.com/emil-ep/rollouts-plugin-metric-instana/releases
+  # 2. Get the sha256 from the SHA256SUMS file attached to the release.
+  # 3. Update `location` and `sha256` below.
   # 4. Restart the controller to pick up the new binary:
   #    kubectl rollout restart deployment/argo-rollouts -n argo-rollouts
   #
   metricProviderPlugins: |-
-    - name: "instana/rollouts-plugin"
-      version: "v0.1.8"
-      location: "https://github.com/emil-ep/instana-argo-metric-plugin/releases/download/v0.1.8/instana-rollouts-plugin-linux-amd64"
-      sha256: "567212bbf5dfe6e41fc68d3a6723d9eb27982900d54a9a107559d50f8989e2e4"
+    - name: "instana/metrics"
+      location: "https://github.com/emil-ep/rollouts-plugin-metric-instana/releases/download/v0.0.1/rollouts-plugin-metric-instana_0.0.1_linux_amd64"
+      sha256: "9bb0243d566ad139f73346d2fcd3d9dc36dd3299c79c2d8079b69fcce8fb95dd"

@@ -4,54 +4,63 @@ metadata:
   name: instana-error-rate
 spec:
   args:
-    # Credentials are resolved directly from the secret by the controller at
-    # measurement time. Do NOT pass these from the Rollout step args — Argo
-    # Rollouts does not resolve secretKeyRef when creating an AnalysisRun from
-    # a canary steps[].analysis block.
-    - name: instana-server-url
+    # instana-url is resolved from the existing backend-secret at measurement
+    # time. That secret is created by:
+    #   kubectl create secret generic backend-secret --from-env-file=secrets.env
+    # and already holds instana.server.url from secrets.env.
+    - name: instana-url
       valueFrom:
         secretKeyRef:
-          name: instana-credentials
-          key: serverUrl
-    - name: instana-api-token
-      valueFrom:
-        secretKeyRef:
-          name: instana-credentials
-          key: apiToken
-    # clusterName must be supplied by the Rollout — Kubernetes does not expose
-    # the cluster name inside the cluster, so there is no automatic valueFrom.
+          name: backend-secret
+          key: instana.server.url
+    # pod-template-hash is injected automatically by Argo Rollouts from the
+    # rollouts-pod-template-hash label on the canary ReplicaSet. It scopes the
+    # Instana query to canary pods only.
+    - name: pod-template-hash
+    # cluster-name is resolved from the instana-credentials secret created by
+    # install.sh (sourced from instana.cluster.name in secrets.env).
     - name: cluster-name
-    # namespace-name is NOT declared here — fieldRef is not supported in
-    # AnalysisTemplate args. The plugin reads it directly from the AnalysisRun's
-    # own ObjectMeta (analysisRun.Namespace) as a built-in fallback.
-    # canary-pod-hash is injected automatically by Argo Rollouts from the
-    # rollouts-pod-template-hash label; it isolates the query to canary pods only.
-    - name: canary-pod-hash
+      valueFrom:
+        secretKeyRef:
+          name: instana-credentials
+          key: clusterName
   metrics:
     - name: error-rate
-      # Measure every 30 seconds
-      interval: 30s
+      # Measure every 1 minute
+      interval: 1m
       # Require 3 consecutive successful measurements before promoting
       count: 3
-      # Promote if error rate stays below 5%
-      successCondition: result < 5.0
-      # Roll back if error rate is 5% or above
-      failureCondition: result >= 5.0
-      # Allow up to 1 consecutive measurement error (network glitch, etc.) before failing
-      consecutiveErrorLimit: 1
+      # Instana reports `errors` as a ratio (0..1); 0.05 == 5%
+      successCondition: result <= 0.05
+      # Allow up to 2 failed measurements before rolling back
+      failureLimit: 2
       provider:
         plugin:
-          instana/rollouts-plugin:
-            serverUrl: "{{args.instana-server-url}}"
-            apiToken: "{{args.instana-api-token}}"
+          instana/metrics:
+            host: "{{args.instana-url}}"
+            # API token is read from the INSTANA_API_TOKEN env var on the Argo
+            # Rollouts controller (injected from the instana-api-token Secret in
+            # the argo-rollouts namespace — see README for the kubectl command).
+            apiTokenEnv: INSTANA_API_TOKEN
+            metric: errors
+            aggregation: MEAN
+            granularity: 60
+            # Look back 5 minutes for each measurement window
+            timeWindowMs: 300000
             clusterName: "{{args.cluster-name}}"
-            # namespaceName is omitted — the plugin falls back to analysisRun.Namespace
-            # Isolates the metric query to the canary replica set only.
-            # Remove this field if you want to measure all pods.
-            canaryPodHash: "{{args.canary-pod-hash}}"
-            # Look back 60 seconds for each measurement
-            windowSize: 60
-            # Return the error-rate percentage (0-100); can also be "calls" or "errors"
-            metricType: errorRate
-
-# Made with Bob
+            # Scope to the deployment namespace — prevents a canary gate from
+            # blending traffic from a same-hash workload in another namespace.
+            # Kubernetes does not expose the namespace as an injectable arg, so
+            # this is hardcoded to match the overlay (gitops/overlays/dev).
+            namespace: ecommerce-dev
+            groupByTag: kubernetes.pod.label
+            groupByTagKey: rollouts-pod-template-hash
+            groupByTagEntity: DESTINATION
+            # Pick the canary group when both canary and stable are reporting
+            selectGroup: "{{args.pod-template-hash}}"
+            tagFilters:
+              - name: kubernetes.pod.label
+                key: rollouts-pod-template-hash
+                operator: EQUALS
+                entity: DESTINATION
+                value: "{{args.pod-template-hash}}"
