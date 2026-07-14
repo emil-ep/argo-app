@@ -140,6 +140,22 @@ if [[ "$INSTANA_API_TOKEN" == "CHANGE_ME"* ]]; then
     exit 1
 fi
 
+echo ""
+echo -e "${YELLOW}Instana Cluster Name (for Argo Rollouts canary analysis)${NC}"
+echo "---------------------------------------------------------"
+echo "NOTE: This must match the cluster name as it appears in Instana."
+echo "      Find it in: Instana UI → Infrastructure → Kubernetes → cluster list"
+echo ""
+read -p "Enter Instana Cluster Name: " INSTANA_CLUSTER_NAME
+if [ -z "$INSTANA_CLUSTER_NAME" ]; then
+    echo -e "${RED}Error: Instana Cluster Name is required!${NC}"
+    exit 1
+fi
+if [[ "$INSTANA_CLUSTER_NAME" == "CHANGE_ME"* ]]; then
+    echo -e "${RED}Error: Please provide your actual cluster name, not a placeholder!${NC}"
+    exit 1
+fi
+
 # Create backend secrets file
 cat > secrets.env << EOF
 # Backend Secrets Configuration
@@ -157,10 +173,11 @@ instana.agent.host=$INSTANA_AGENT_HOST
 instana.agent.port=$INSTANA_AGENT_PORT
 instana.agent.key=$INSTANA_AGENT_KEY
 
-# Instana server URL and API token for Argo Rollouts canary analysis
+# Instana server URL, API token, and cluster name for Argo Rollouts canary analysis
 # The AnalysisTemplate queries this URL to read error-rate metrics on canary pods
 instana.server.url=$INSTANA_SERVER_URL
 instana.api.token=$INSTANA_API_TOKEN
+instana.cluster.name=$INSTANA_CLUSTER_NAME
 EOF
 
 echo -e "${GREEN}✓ Backend secrets file created${NC}"

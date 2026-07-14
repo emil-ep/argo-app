@@ -110,23 +110,27 @@ kubectl create secret generic backend-secret \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Create instana-credentials secret for the Argo Rollouts AnalysisTemplate.
-# Both serverUrl and apiToken are stored as Secret keys because Argo Rollouts
-# analysis args only support secretKeyRef (not configMapKeyRef) for valueFrom.
+# serverUrl, apiToken, and clusterName are stored as Secret keys because Argo
+# Rollouts analysis args only support secretKeyRef (not configMapKeyRef) for valueFrom.
 echo "Creating instana-credentials secret..."
 INSTANA_API_TOKEN=$(grep '^instana.api.token=' gitops/overlays/dev/secrets.env \
   | cut -d= -f2- | tr -d '[:space:]')
 INSTANA_SERVER_URL=$(grep '^instana.server.url=' gitops/overlays/dev/secrets.env \
   | cut -d= -f2- | tr -d '[:space:]')
-if [ -n "$INSTANA_API_TOKEN" ] && [ -n "$INSTANA_SERVER_URL" ]; then
+INSTANA_CLUSTER_NAME=$(grep '^instana.cluster.name=' gitops/overlays/dev/secrets.env \
+  | cut -d= -f2- | tr -d '[:space:]')
+if [ -n "$INSTANA_API_TOKEN" ] && [ -n "$INSTANA_SERVER_URL" ] && [ -n "$INSTANA_CLUSTER_NAME" ]; then
     kubectl create secret generic instana-credentials \
       --from-literal=apiToken="$INSTANA_API_TOKEN" \
       --from-literal=serverUrl="$INSTANA_SERVER_URL" \
+      --from-literal=clusterName="$INSTANA_CLUSTER_NAME" \
       -n ecommerce-dev \
       --dry-run=client -o yaml | kubectl apply -f -
-    echo -e "${GREEN}✓ instana-credentials secret created (apiToken + serverUrl)${NC}"
+    echo -e "${GREEN}✓ instana-credentials secret created (serverUrl + apiToken + clusterName)${NC}"
 else
-    [ -z "$INSTANA_API_TOKEN" ]  && echo -e "${YELLOW}⚠ instana.api.token not found in secrets.env${NC}"
-    [ -z "$INSTANA_SERVER_URL" ] && echo -e "${YELLOW}⚠ instana.server.url not found in secrets.env${NC}"
+    [ -z "$INSTANA_API_TOKEN" ]   && echo -e "${YELLOW}⚠ instana.api.token not found in secrets.env${NC}"
+    [ -z "$INSTANA_SERVER_URL" ]  && echo -e "${YELLOW}⚠ instana.server.url not found in secrets.env${NC}"
+    [ -z "$INSTANA_CLUSTER_NAME" ] && echo -e "${YELLOW}⚠ instana.cluster.name not found in secrets.env${NC}"
     echo -e "${YELLOW}  The canary analysis will fail until instana-credentials secret is created.${NC}"
 fi
 

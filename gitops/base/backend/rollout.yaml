@@ -141,14 +141,9 @@ spec:
           templates:
           - templateName: instana-error-rate
           args:
-          # instana-server-url and instana-api-token are resolved from the
-          # instana-credentials secret inside the AnalysisTemplate itself.
-          # cluster-name must match the cluster name as it appears in Instana
-          # (Settings → Infrastructure → Kubernetes).
-          - name: cluster-name
-            value: 
-          # namespace-name is handled by the plugin from analysisRun.Namespace.
-          - name: canary-pod-hash
+          # cluster-name and instana-url are resolved from instana-credentials
+          # secret inside the AnalysisTemplate itself (secretKeyRef).
+          - name: pod-template-hash
             valueFrom:
               podTemplateHashValue: Latest
       # Index 3 — promote to 40%
