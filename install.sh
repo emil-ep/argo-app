@@ -152,8 +152,7 @@ if [ -n "$INSTANA_API_TOKEN" ]; then
       --from-literal=token="$INSTANA_API_TOKEN" \
       -n argo-rollouts \
       --dry-run=client -o yaml | kubectl apply -f -
-    kubectl -n argo-rollouts set env deployment/argo-rollouts \
-      INSTANA_API_TOKEN=- --from=secret/instana-api-token --keys=token
+    kubectl -n argo-rollouts patch deployment argo-rollouts --type=json -p="[{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/env/-\",\"value\":{\"name\":\"INSTANA_API_TOKEN\",\"valueFrom\":{\"secretKeyRef\":{\"name\":\"instana-api-token\",\"key\":\"token\"}}}}]"
     echo -e "${GREEN}✓ INSTANA_API_TOKEN injected into argo-rollouts controller${NC}"
 fi
 
