@@ -25,7 +25,7 @@ spec:
           name: instana-credentials
           key: clusterName
   metrics:
-    - name: error-rate
+    - name: instana/metrics
       # Measure every 1 minute
       interval: 1m
       # Require 3 consecutive successful measurements before promoting

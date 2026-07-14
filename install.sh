@@ -136,13 +136,33 @@ fi
 
 # Register the Instana Rollouts metric plugin with the Argo Rollouts controller.
 # This ConfigMap tells the controller the binary location to download at startup.
-# Without this, any AnalysisRun using instana/rollouts-plugin will fail immediately.
+# Without this, any AnalysisRun using instana/metrics will fail immediately.
 echo "Registering Instana Rollouts plugin with Argo Rollouts controller..."
 kubectl apply -f gitops/base/argo-rollouts/plugin-configmap.yaml
 echo -e "${GREEN}✓ Argo Rollouts plugin configmap applied${NC}"
-echo -e "${YELLOW}  Note: The controller will download the plugin binary on its next restart.${NC}"
-echo -e "${YELLOW}  Restart it now to ensure the plugin is ready before the first rollout:${NC}"
-echo -e "${YELLOW}    kubectl rollout restart deployment/argo-rollouts -n argo-rollouts${NC}"
+
+# Expose the Instana API token to the controller process as INSTANA_API_TOKEN.
+# The plugin reads the token via os.Getenv — it cannot read it from a Secret
+# directly, so it must be injected as an env var on the controller Deployment.
+# The secret is created in the argo-rollouts namespace (not ecommerce-dev) because
+# the controller only has access to its own namespace's secrets.
+if [ -n "$INSTANA_API_TOKEN" ]; then
+    echo "Exposing INSTANA_API_TOKEN to the Argo Rollouts controller..."
+    kubectl create secret generic instana-api-token \
+      --from-literal=token="$INSTANA_API_TOKEN" \
+      -n argo-rollouts \
+      --dry-run=client -o yaml | kubectl apply -f -
+    kubectl -n argo-rollouts set env deployment/argo-rollouts \
+      INSTANA_API_TOKEN=- --from=secret/instana-api-token --keys=token
+    echo -e "${GREEN}✓ INSTANA_API_TOKEN injected into argo-rollouts controller${NC}"
+fi
+
+# Restart the controller so it picks up the updated ConfigMap and env var,
+# and downloads the plugin binary from GitHub on first start.
+echo "Restarting Argo Rollouts controller to load plugin..."
+kubectl rollout restart deployment/argo-rollouts -n argo-rollouts
+kubectl rollout status deployment/argo-rollouts -n argo-rollouts --timeout=120s
+echo -e "${GREEN}✓ Argo Rollouts controller restarted with Instana plugin${NC}"
 echo ""
 
 echo -e "${GREEN}✓ Namespace, secrets and configmaps ready${NC}"
