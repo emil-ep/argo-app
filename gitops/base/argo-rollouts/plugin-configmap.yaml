@@ -31,5 +31,5 @@ data:
   #
   metricProviderPlugins: |-
     - name: "instana/metrics"
-      location: "https://github.com/emil-ep/rollouts-plugin-metric-instana/releases/download/v0.0.1/rollouts-plugin-metric-instana_0.0.1_linux_amd64"
-      sha256: "9bb0243d566ad139f73346d2fcd3d9dc36dd3299c79c2d8079b69fcce8fb95dd"
+      location: "https://github.com/instana/rollouts-plugin-metric-instana/releases/download/v0.1.0/rollouts-plugin-metric-instana_0.1.0_linux_amd64"
+      sha256: "82892d53db54919cdae47a074a6d62499431fe321fb8b10674095438ce12946f"
