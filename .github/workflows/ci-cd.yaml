@@ -20,6 +20,7 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: read
 
 env:
   REGISTRY: ghcr.io
@@ -191,5 +192,18 @@ jobs:
             ```
           draft: false
           prerelease: false
+  export-otel-trace:
+    needs: [version, build-backend, build-frontend, create-release]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Export workflow trace to Instana
+        uses: dash0hq/otel-cicd-action@v4
+        with:
+          otlpEndpoint: https://<your-tenant>.instana.io:443
+          otlpHeaders: ${{ secrets.INSTANA_OTLP_HEADERS }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          runId: ${{ github.run_id }}
+          otelServiceName: ecommerce-cicd
+          extraAttributes: "repository=${{ github.repository }},branch=${{ github.ref_name }}"
 
-# Made with Bob
