@@ -1,6 +1,6 @@
 {
   "name": "ecommerce-frontend",
-  "version": "1.0.41",
+  "version": "1.0.42",
   "description": "E-commerce frontend with React and Vite",
   "type": "module",
   "scripts": {
