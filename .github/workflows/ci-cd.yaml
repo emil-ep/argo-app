@@ -200,7 +200,7 @@ jobs:
       - name: Export workflow trace to Instana
         uses: dash0hq/otel-cicd-action@v4
         with:
-          otlpEndpoint: grpc://otlp-grpc-red-saas.instana.io:443
+          otlpEndpoint: grpc://otlp-red-saas.instana.io:4317
           otlpHeaders: ${{ secrets.INSTANA_OTLP_HEADERS }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           runId: ${{ github.run_id }}
