@@ -152,7 +152,31 @@ if [ -n "$INSTANA_API_TOKEN" ]; then
       --from-literal=token="$INSTANA_API_TOKEN" \
       -n argo-rollouts \
       --dry-run=client -o yaml | kubectl apply -f -
-    kubectl -n argo-rollouts patch deployment argo-rollouts --type=strategic -p="{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"argo-rollouts\",\"env\":[{\"name\":\"INSTANA_API_TOKEN\",\"valueFrom\":{\"secretKeyRef\":{\"name\":\"instana-api-token\",\"key\":\"token\"}}}]}]}}}}"
+
+    # Resolve the actual container name — upstream installs use "argo-rollouts"
+    # but verify rather than assume, to avoid a silent no-op patch.
+    AR_CONTAINER=$(kubectl get deployment argo-rollouts -n argo-rollouts \
+      -o jsonpath='{.spec.template.spec.containers[0].name}')
+    echo "  Argo Rollouts container name: ${AR_CONTAINER}"
+
+    # Only patch if INSTANA_API_TOKEN is not already present (idempotent).
+    ALREADY_SET=$(kubectl get deployment argo-rollouts -n argo-rollouts \
+      -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="INSTANA_API_TOKEN")].name}' \
+      2>/dev/null || true)
+    if [ -z "$ALREADY_SET" ]; then
+        kubectl -n argo-rollouts patch deployment argo-rollouts --type=strategic \
+          -p="{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${AR_CONTAINER}\",\"env\":[{\"name\":\"INSTANA_API_TOKEN\",\"valueFrom\":{\"secretKeyRef\":{\"name\":\"instana-api-token\",\"key\":\"token\"}}}]}]}}}}"
+        # Confirm the env var actually landed — fail loudly if the patch was a no-op.
+        VERIFY=$(kubectl get deployment argo-rollouts -n argo-rollouts \
+          -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="INSTANA_API_TOKEN")].name}' \
+          2>/dev/null || true)
+        if [ -z "$VERIFY" ]; then
+            echo -e "${RED}✗ Patch did not inject INSTANA_API_TOKEN — check container name and retry.${NC}"
+            exit 1
+        fi
+    else
+        echo "  INSTANA_API_TOKEN already present, skipping patch."
+    fi
     echo -e "${GREEN}✓ INSTANA_API_TOKEN injected into argo-rollouts controller${NC}"
 fi
 
