@@ -7,6 +7,9 @@ metadata:
     app.kubernetes.io/name: backend
     app.kubernetes.io/component: api
     app.kubernetes.io/part-of: ecommerce
+    admission.datadoghq.com/enabled: "true"
+  annotations:
+    admission.datadoghq.com/js-lib.version: "latest"
 spec:
   replicas: 3
   revisionHistoryLimit: 3
@@ -37,6 +40,20 @@ spec:
           value: production
         - name: PORT
           value: "3000"
+        - name: NODE_OPTIONS
+          value: "--require=/opt/datadog/apm/library/js/node_modules/dd-trace/init"
+        - name: DD_SERVICE
+          value: "backend"
+        - name: DD_ENV
+          value: "dev"
+        - name: DD_VERSION
+          value: "v1.0.45"
+        - name: DD_TRACE_ENABLED
+          value: "true"
+        - name: DD_RUNTIME_METRICS_ENABLED
+          value: "true"
+        - name: DD_LOGS_INJECTION
+          value: "true"
         - name: DATABASE_HOST
           valueFrom:
             configMapKeyRef:
