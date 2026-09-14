@@ -23,4 +23,9 @@ data:
   # instana.agent.host and instana.agent.port are now configured via secrets
   instana.service.name: "ecommerce-backend"
 
-# Made with Bob
+  # Datadog configuration
+  datadog.apm.enabled: "true"
+  datadog.service.name: "ecommerce-backend"
+  datadog.env: "development"
+  datadog.version: "1.0.0"
+

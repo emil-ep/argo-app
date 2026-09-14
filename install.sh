@@ -306,6 +306,26 @@ kubectl patch configmap frontend-config -n ecommerce-dev \
   -p "{\"data\":{\"api.url\":\"${API_URL}\"}}" 2>/dev/null || true
 echo -e "${GREEN}✓ frontend-config api.url updated${NC}"
 
+# If frontend-secrets.env contains Datadog RUM configuration, inject into frontend-config
+if [ -f "gitops/overlays/dev/frontend-secrets.env" ]; then
+    DD_APP_ID=$(grep '^datadog.application.id=' gitops/overlays/dev/frontend-secrets.env | cut -d= -f2- | tr -d '[:space:]' || true)
+    DD_CLIENT_TOKEN=$(grep '^datadog.client.token=' gitops/overlays/dev/frontend-secrets.env | cut -d= -f2- | tr -d '[:space:]' || true)
+    DD_SITE=$(grep '^datadog.site=' gitops/overlays/dev/frontend-secrets.env | cut -d= -f2- | tr -d '[:space:]' || true)
+    
+    if [ -n "$DD_APP_ID" ]; then
+        kubectl patch configmap frontend-config -n ecommerce-dev --type merge \
+          -p "{\"data\":{\"datadog.application.id\":\"${DD_APP_ID}\"}}" 2>/dev/null || true
+    fi
+    if [ -n "$DD_CLIENT_TOKEN" ]; then
+        kubectl patch configmap frontend-config -n ecommerce-dev --type merge \
+          -p "{\"data\":{\"datadog.client.token\":\"${DD_CLIENT_TOKEN}\"}}" 2>/dev/null || true
+    fi
+    if [ -n "$DD_SITE" ]; then
+        kubectl patch configmap frontend-config -n ecommerce-dev --type merge \
+          -p "{\"data\":{\"datadog.site\":\"${DD_SITE}\"}}" 2>/dev/null || true
+    fi
+fi
+
 # Restart frontend so the new API_URL env value is picked up
 echo "Restarting frontend to pick up new api.url..."
 kubectl rollout restart deployment/frontend -n ecommerce-dev 2>/dev/null || true

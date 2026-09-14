@@ -1,4 +1,5 @@
-// Instana MUST be required first for proper instrumentation
+// APM instrumentation MUST be required first
+require('./datadog');
 require('./instana');
 require('dotenv').config();
 const express = require('express');

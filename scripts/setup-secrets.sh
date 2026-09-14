@@ -103,6 +103,30 @@ if [[ "$INSTANA_AGENT_KEY" == "CHANGE_ME"* ]]; then
     exit 1
 fi
 
+# Datadog APM configuration
+echo ""
+echo -e "${YELLOW}Datadog APM Tracing Configuration (Backend)${NC}"
+echo "-------------------------------------------"
+echo "Get your Datadog credentials from:"
+echo "  • API Key: Datadog UI → Organization Settings → API Keys"
+echo "  • Agent Host: localhost, datadog-agent, or Kubernetes node IP"
+echo ""
+
+read -p "Enter Datadog Agent Host (default: datadog-agent): " DATADOG_AGENT_HOST
+if [ -z "$DATADOG_AGENT_HOST" ]; then
+    DATADOG_AGENT_HOST="datadog-agent"
+    echo -e "${YELLOW}Using default: $DATADOG_AGENT_HOST${NC}"
+fi
+
+read -p "Enter Datadog Trace Agent Port (default: 8126): " DATADOG_AGENT_PORT
+if [ -z "$DATADOG_AGENT_PORT" ]; then
+    DATADOG_AGENT_PORT="8126"
+    echo -e "${YELLOW}Using default: $DATADOG_AGENT_PORT${NC}"
+fi
+
+read -p "Enter Datadog API Key (press Enter to skip if not using direct intake): " DATADOG_API_KEY
+DATADOG_API_KEY=${DATADOG_API_KEY:-""}
+
 echo ""
 echo -e "${YELLOW}Instana Server URL (for Argo Rollouts canary analysis)${NC}"
 echo "-------------------------------------------------------"
@@ -173,6 +197,11 @@ instana.agent.host=$INSTANA_AGENT_HOST
 instana.agent.port=$INSTANA_AGENT_PORT
 instana.agent.key=$INSTANA_AGENT_KEY
 
+# Datadog configuration for backend APM tracing
+datadog.agent.host=$DATADOG_AGENT_HOST
+datadog.agent.port=$DATADOG_AGENT_PORT
+datadog.api.key=$DATADOG_API_KEY
+
 # Instana server URL, API token, and cluster name for Argo Rollouts canary analysis
 # The AnalysisTemplate queries this URL to read error-rate metrics on canary pods
 instana.server.url=$INSTANA_SERVER_URL
@@ -205,6 +234,18 @@ if [[ "$INSTANA_EUM_KEY" == "CHANGE_ME"* ]]; then
     exit 1
 fi
 
+echo ""
+echo -e "${YELLOW}Datadog Real User Monitoring (RUM) Configuration (Frontend)${NC}"
+echo "------------------------------------------------------------"
+echo "Get your Datadog credentials from:"
+echo "  • Application ID & Client Token: Datadog UI → UX Monitoring → RUM Applications"
+echo ""
+
+read -p "Enter Datadog Application ID (or press Enter to skip): " DATADOG_APP_ID
+read -p "Enter Datadog Client Token (or press Enter to skip): " DATADOG_CLIENT_TOKEN
+read -p "Enter Datadog Site (default: datadoghq.com): " DATADOG_SITE
+DATADOG_SITE=${DATADOG_SITE:-"datadoghq.com"}
+
 # Create frontend secrets file
 cat > frontend-secrets.env << EOF
 # Frontend Secrets Configuration
@@ -212,6 +253,11 @@ cat > frontend-secrets.env << EOF
 
 # Instana End User Monitoring (EUM) key
 instana.eum.key=$INSTANA_EUM_KEY
+
+# Datadog Browser RUM configuration
+datadog.application.id=$DATADOG_APP_ID
+datadog.client.token=$DATADOG_CLIENT_TOKEN
+datadog.site=$DATADOG_SITE
 EOF
 
 echo -e "${GREEN}✓ Frontend secrets file created${NC}"

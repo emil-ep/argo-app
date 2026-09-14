@@ -84,6 +84,43 @@ spec:
             configMapKeyRef:
               name: backend-config
               key: instana.service.name
+        - name: DD_APM_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: datadog.apm.enabled
+        - name: DD_AGENT_HOST
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: datadog.agent.host
+        - name: DD_TRACE_AGENT_PORT
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: datadog.agent.port
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: datadog.api.key
+        - name: DD_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: datadog.service.name
+        - name: DD_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: datadog.env
+        - name: DD_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: datadog.version
+        - name: DD_LOGS_INJECTION
+          value: "true"
         resources:
           requests:
             memory: "256Mi"
@@ -106,4 +143,3 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
 
-# Made with Bob
