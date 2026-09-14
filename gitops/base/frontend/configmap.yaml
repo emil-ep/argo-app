@@ -16,4 +16,11 @@ data:
   instana.eum.key: "CHANGE_ME_INSTANA_EUM_KEY"
   instana.eum.url: "https://eum.instana.io"
 
-# Made with Bob
+  # Datadog Browser RUM configuration
+  datadog.application.id: "CHANGE_ME_DD_APPLICATION_ID"
+  datadog.client.token: "CHANGE_ME_DD_CLIENT_TOKEN"
+  datadog.site: "datadoghq.com"
+  datadog.service: "ecommerce-frontend"
+  datadog.env: "development"
+  datadog.version: "1.0.0"
+

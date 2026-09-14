@@ -1,6 +1,7 @@
 const { Order, OrderItem, CartItem, Product, User } = require('../models');
 const sequelize = require('../config/database');
 const instana = require('@instana/collector');
+const tracer = require('../datadog');
 
 exports.getOrders = async (req, res) => {
   try {
@@ -67,6 +68,11 @@ exports.createOrder = async (req, res) => {
       const currentSpan = instana.currentSpan();
       if (currentSpan) {
         currentSpan.markAsErroneous(err);
+      }
+      const ddSpan = tracer.scope().active();
+      if (ddSpan) {
+        ddSpan.setTag('error', true);
+        ddSpan.setTag('error.message', err.message);
       }
       await transaction.rollback();
       return res.status(500).json({ error: 'Shipping address is required : mock error' });

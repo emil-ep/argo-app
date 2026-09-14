@@ -24,8 +24,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built application
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create env.js template with Instana EUM variables
-RUN echo 'window.ENV = { API_URL: "${API_URL}", INSTANA_EUM_KEY: "${INSTANA_EUM_KEY}", INSTANA_EUM_URL: "${INSTANA_EUM_URL}" };' > /usr/share/nginx/html/env.js.template
+# Create env.js template with Instana EUM and Datadog RUM variables
+RUN echo 'window.ENV = { API_URL: "${API_URL}", INSTANA_EUM_KEY: "${INSTANA_EUM_KEY}", INSTANA_EUM_URL: "${INSTANA_EUM_URL}", DD_APPLICATION_ID: "${DD_APPLICATION_ID}", DD_CLIENT_TOKEN: "${DD_CLIENT_TOKEN}", DD_SITE: "${DD_SITE}", DD_SERVICE: "${DD_SERVICE}", DD_ENV: "${DD_ENV}", DD_VERSION: "${DD_VERSION}" };' > /usr/share/nginx/html/env.js.template
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh

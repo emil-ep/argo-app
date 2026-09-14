@@ -38,6 +38,36 @@ spec:
             configMapKeyRef:
               name: frontend-config
               key: instana.eum.url
+        - name: DD_APPLICATION_ID
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: datadog.application.id
+        - name: DD_CLIENT_TOKEN
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: datadog.client.token
+        - name: DD_SITE
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: datadog.site
+        - name: DD_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: datadog.service
+        - name: DD_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: datadog.env
+        - name: DD_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: datadog.version
         resources:
           requests:
             memory: "128Mi"
@@ -60,4 +90,3 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
 
-# Made with Bob
