@@ -40,12 +40,6 @@ spec:
           value: production
         - name: PORT
           value: "3000"
-        - name: DD_SERVICE
-          value: "backend"
-        - name: DD_ENV
-          value: "dev"
-        - name: DD_VERSION
-          value: "v1.0.45"
         - name: DD_TRACE_ENABLED
           value: "true"
         - name: DD_RUNTIME_METRICS_ENABLED
@@ -147,8 +141,6 @@ spec:
             configMapKeyRef:
               name: backend-config
               key: datadog.version
-        - name: DD_LOGS_INJECTION
-          value: "true"
         resources:
           requests:
             memory: "256Mi"
