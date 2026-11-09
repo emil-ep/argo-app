@@ -32,4 +32,4 @@ data:
   metricProviderPlugins: |-
     - name: "instana/metrics"
       location: "http://9.30.230.119:8888/rollouts-plugin-metric-instana_0.1.1-pr14_linux_amd64"
-      sha256: "bce385ff31689049f8636834f97cad51b2606c4de01b3d9709c4f1a2a00a0244"
+      sha256: "ea62c937b26366a3be75cc65bc595a6d000017fa0a1b11b76cd2489a9d6ab6eb"
