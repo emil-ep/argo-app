@@ -25,13 +25,16 @@ spec:
           name: instana-credentials
           key: clusterName
   metrics:
-    - name: instana/metrics
+    - name: error-rate
       # Measure every 1 minute
       interval: 1m
       # Require 3 consecutive successful measurements before promoting
       count: 3
-      # Instana reports `errors` as a ratio (0..1); 0.05 == 5%
-      successCondition: result <= 0.05
+      # Instana reports `errors` as a ratio (0..1); 0.05 == 5%.
+      # Instana returns no group when the canary has no error calls, so the
+      # plugin yields nil. default(result, 0) treats that as a 0% error rate.
+      # Traffic is verified separately by the canary-traffic metric below.
+      successCondition: default(result, 0) <= 0.05
       # Allow up to 2 failed measurements before rolling back
       failureLimit: 2
       provider:
@@ -57,6 +60,36 @@ spec:
             groupByTagKey: rollouts-pod-template-hash
             groupByTagEntity: DESTINATION
             # Pick the canary group when both canary and stable are reporting
+            selectGroup: "{{args.pod-template-hash}}"
+            tagFilters:
+              - name: kubernetes.pod.label
+                key: rollouts-pod-template-hash
+                operator: EQUALS
+                entity: DESTINATION
+                value: "{{args.pod-template-hash}}"
+
+    # Guard: "no error calls" is only healthy if the canary is actually serving
+    # traffic. Without this, a canary that is down or unrouted also returns an
+    # empty errors result and would pass the error-rate gate.
+    - name: canary-traffic
+      interval: 1m
+      count: 3
+      successCondition: default(result, 0) > 0
+      failureLimit: 2
+      provider:
+        plugin:
+          instana/metrics:
+            host: "{{args.instana-url}}"
+            apiTokenEnv: INSTANA_API_TOKEN
+            metric: calls
+            aggregation: SUM
+            granularity: 60
+            timeWindowMs: 300000
+            clusterName: "{{args.cluster-name}}"
+            namespace: ecommerce-dev
+            groupByTag: kubernetes.pod.label
+            groupByTagKey: rollouts-pod-template-hash
+            groupByTagEntity: DESTINATION
             selectGroup: "{{args.pod-template-hash}}"
             tagFilters:
               - name: kubernetes.pod.label
