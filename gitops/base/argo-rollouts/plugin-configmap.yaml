@@ -31,5 +31,5 @@ data:
   #
   metricProviderPlugins: |-
     - name: "instana/metrics"
-      location: "http://9.30.230.119:8888/rollouts-plugin-metric-instana_0.1.1-pr14_linux_amd64"
-      sha256: "ea62c937b26366a3be75cc65bc595a6d000017fa0a1b11b76cd2489a9d6ab6eb"
+      location: "http://9.30.230.119:8888/rollouts-plugin-metric-instana_0.1.1-pr15_linux_amd64"
+      sha256: "d9ff67f4675d58a45064a685bdcb973eaea22a1ad992f0150fd6ec0dcdd59daf"
